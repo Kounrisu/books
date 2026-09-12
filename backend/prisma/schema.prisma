@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  locations    Location[]
+  books        Book[]
+
+  @@map("users")
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  photoPath String?  @map("photo_path")
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now()) @map("created_at")
+  books     Book[]
+
+  @@map("locations")
+}
+
+model Book {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  user           User      @relation(fields: [userId], references: [id])
+  title          String
+  author         String
+  category       String?
+  language       String?
+  description    String?
+  myReview       String?   @map("my_review")
+  myNote         Int?      @map("my_note")
+  recommend      Boolean?
+  coverImagePath String?   @map("cover_image_path")
+  locationId     String?   @map("location_id")
+  location       Location? @relation(fields: [locationId], references: [id])
+  purchaseDate   DateTime? @map("purchase_date")
+  purchasePrice  Decimal?  @map("purchase_price") @db.Decimal(10, 2)
+  source         String    @default("manual")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@map("books")
+}

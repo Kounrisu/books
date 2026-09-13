@@ -1,7 +1,7 @@
-# Project Context: Fast Functional Prototyping
+# Project Context: Books Management Webapp
 
 ## Goal
-Build a rapid, functional mock-up/prototype to validate user flows, core data interactions, and screen layouts. The core logic will later migrate to another architecture/design system, so keep components decoupled, modular, and cleanly separated between logic and presentation.
+A real, working personal book library manager — not a throwaway mock-up. The backend (NestJS + Prisma + Postgres) and frontend (Angular + Material) are both real and already verified end-to-end (auth, multi-tenant scoping, photo uploads, computed rankings). Keep components decoupled, modular, and cleanly separated between logic and presentation so the app stays easy to extend (v2: AI-assisted cover recognition, book-API enrichment — see the design spec).
 
 ## Tech Stack & Conventions
 - Angular (Modern standalone components, Signals for state, inject(), modern control flow @if / @for)
@@ -23,6 +23,6 @@ Build a rapid, functional mock-up/prototype to validate user flows, core data in
    - Primary action buttons: `mat-flat-button` with `color="primary"`. Secondary: `mat-stroked-button`.
 
 ## Code & Architecture Strategy
-- Mock Data: Keep mock datasets in dedicated `*.mock.ts` or light mock services returning Signals / observables so the UI is immediately interactive without a real backend.
+- Demo/Seed Data: Lives in the real Postgres database, added through the real API (register a user, then `POST /locations` and `POST /books`) — never faked in `*.mock.ts` files or in-memory services. If you need a quick batch of demo rows, script it against the running API (see how the current demo books/locations were seeded), not by hardcoding fixtures in the frontend.
 - Thin Components: Split features into clear presenter screens and smart containers. Do not write monolithic 500-line components.
-- Portability: Keep business logic inside pure TypeScript classes/services so it can be ported to another framework or library later without rewriting UI logic.
+- Portability: Keep business logic inside pure TypeScript classes/services (`BooksService`, `LocationsService`, `AuthService`, etc.) so it stays easy to extend or port without rewriting UI logic.

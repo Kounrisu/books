@@ -10,5 +10,8 @@
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
-  <button mat-raised-button color="primary" type="submit">Log in</button>
+  <button mat-raised-button color="primary" type="submit">{{ mode() === 'register' ? 'Register' : 'Log in' }}</button>
 </form>
+<button mat-button type="button" (click)="toggleMode()">
+  {{ mode() === 'register' ? 'Already have an account? Log in' : 'Need an account? Register' }}
+</button>

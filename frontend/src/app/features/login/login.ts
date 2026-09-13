@@ -18,14 +18,24 @@ export class LoginComponent {
   readonly email = signal('');
   readonly password = signal('');
   readonly error = signal<string | null>(null);
+  readonly mode = signal<'login' | 'register'>('login');
+
+  toggleMode(): void {
+    this.error.set(null);
+    this.mode.set(this.mode() === 'login' ? 'register' : 'login');
+  }
 
   async submit(): Promise<void> {
     this.error.set(null);
     try {
-      await this.auth.login(this.email(), this.password());
+      if (this.mode() === 'register') {
+        await this.auth.register(this.email(), this.password());
+      } else {
+        await this.auth.login(this.email(), this.password());
+      }
       this.router.navigateByUrl('/books');
     } catch {
-      this.error.set('Invalid email or password.');
+      this.error.set(this.mode() === 'register' ? 'Could not register with those details.' : 'Invalid email or password.');
     }
   }
 }

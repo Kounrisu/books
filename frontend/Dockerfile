@@ -1,9 +1,10 @@
 FROM node:24-alpine AS build
 WORKDIR /app
+ARG CONFIGURATION=production
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npx ng build
+RUN npx ng build --configuration=$CONFIGURATION
 
 FROM node:24-alpine AS runtime
 WORKDIR /app

@@ -31,7 +31,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        CONFIGURATION: development
     ports:
       - '4200:4200'
     depends_on:

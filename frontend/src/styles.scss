@@ -42,3 +42,10 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   color: var(--mat-sys-error);
   margin: 0;
 }
+
+// Consistent full-width form-field density across every form in the app,
+// per project convention (see CLAUDE.md), instead of repeating a width
+// utility class on every individual <mat-form-field>.
+mat-form-field {
+  width: 100%;
+}

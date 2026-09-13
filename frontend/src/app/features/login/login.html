@@ -17,7 +17,7 @@
         @if (error()) {
           <p class="error">{{ error() }}</p>
         }
-        <button mat-raised-button color="primary" type="submit">{{ mode() === 'register' ? 'Register' : 'Log in' }}</button>
+        <button mat-flat-button color="primary" type="submit">{{ mode() === 'register' ? 'Register' : 'Log in' }}</button>
       </form>
     </mat-card-content>
     <mat-card-actions>

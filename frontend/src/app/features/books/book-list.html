@@ -1,15 +1,106 @@
 <div class="page-header">
   <h1>My Books</h1>
-  <a mat-flat-button color="primary" routerLink="/books/new">
-    <mat-icon>add</mat-icon>
-    Add book
-  </a>
+  <div class="header-actions">
+    <a mat-stroked-button routerLink="/books/import">
+      <mat-icon>upload_file</mat-icon>
+      Import / Export
+    </a>
+    <a mat-flat-button color="primary" routerLink="/books/new">
+      <mat-icon>add</mat-icon>
+      Add book
+    </a>
+  </div>
 </div>
 
-@if (booksService.books().length === 0) {
+@if (booksService.error(); as errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
+
+<div class="filter-bar">
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>Search</mat-label>
+    <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Title, author, description, review" />
+    <mat-icon matPrefix>search</mat-icon>
+  </mat-form-field>
+
+  @if (settingsService.isFilterVisible('category')) {
+    <mat-form-field appearance="outline">
+      <mat-label>Category</mat-label>
+      <mat-select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
+        <mat-option value="">All categories</mat-option>
+        @for (category of categories(); track category) {
+          <mat-option [value]="category">{{ category }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (settingsService.isFilterVisible('subcategory')) {
+    <mat-form-field appearance="outline">
+      <mat-label>Subgenre</mat-label>
+      <mat-select [ngModel]="subcategoryFilter()" (ngModelChange)="subcategoryFilter.set($event)">
+        <mat-option value="">All subgenres</mat-option>
+        @for (subcategory of subcategories(); track subcategory) {
+          <mat-option [value]="subcategory">{{ subcategory }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (settingsService.isFilterVisible('location')) {
+    <mat-form-field appearance="outline">
+      <mat-label>Location</mat-label>
+      <mat-select [ngModel]="locationFilter()" (ngModelChange)="locationFilter.set($event)">
+        <mat-option value="">All locations</mat-option>
+        @for (location of locationsService.locations(); track location.id) {
+          <mat-option [value]="location.id">{{ location.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (settingsService.isFilterVisible('libraryStatus')) {
+    <mat-form-field appearance="outline">
+      <mat-label>Collection status</mat-label>
+      <mat-select multiple [ngModel]="libraryStatusFilter()" (ngModelChange)="libraryStatusFilter.set($event)">
+        @for (option of libraryStatusOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (settingsService.isFilterVisible('readingStatus')) {
+    <mat-form-field appearance="outline">
+      <mat-label>Reading status</mat-label>
+      <mat-select multiple [ngModel]="readingStatusFilter()" (ngModelChange)="readingStatusFilter.set($event)">
+        @for (option of readingStatusOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (hasActiveFilters()) {
+    <button mat-stroked-button type="button" (click)="clearFilters()">
+      <mat-icon>close</mat-icon>
+      Clear filters
+    </button>
+  }
+</div>
+
+@if (booksService.loading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (booksService.books().length === 0) {
   <p class="empty-state">No books yet. Add your first one!</p>
+} @else if (filteredBooks().length === 0) {
+  <p class="empty-state">No books match your search or filters.</p>
 } @else {
-  <table mat-table [dataSource]="booksService.books()" class="book-table">
+  <p class="sort-hint">Click a column header to sort. Shift-click to sort by multiple columns.</p>
+  <div class="table-scroll">
+  <table mat-table [dataSource]="filteredBooks()" class="book-table">
     <ng-container matColumnDef="cover">
       <th mat-header-cell *matHeaderCellDef></th>
       <td mat-cell *matCellDef="let book">
@@ -20,59 +111,252 @@
     </ng-container>
 
     <ng-container matColumnDef="title">
-      <th mat-header-cell *matHeaderCellDef>Title</th>
-      <td mat-cell *matCellDef="let book">{{ book.title }}</td>
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('title', $event)">
+        Title
+        @if (sortState('title'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">
+        <a [routerLink]="['/books', book.id]">{{ book.title }}</a>
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="author">
-      <th mat-header-cell *matHeaderCellDef>Author</th>
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('author', $event)">
+        Author
+        @if (sortState('author'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
       <td mat-cell *matCellDef="let book">{{ book.author }}</td>
     </ng-container>
 
     <ng-container matColumnDef="category">
-      <th mat-header-cell *matHeaderCellDef>Category</th>
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('category', $event)">
+        Category
+        @if (sortState('category'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
       <td mat-cell *matCellDef="let book">
-        @if (book.category) {
-          <mat-chip-set>
-            <mat-chip>{{ book.category }}</mat-chip>
-          </mat-chip-set>
+        @if (editingCategoryId() === book.id) {
+          <mat-form-field appearance="outline" class="inline-edit-field">
+            <input
+              matInput
+              [ngModel]="categoryEditValue()"
+              (ngModelChange)="categoryEditValue.set($event)"
+              [matAutocomplete]="inlineCategoryAuto"
+              (blur)="commitCategoryEdit(book)"
+              (keydown.enter)="commitCategoryEdit(book)"
+            />
+            <mat-autocomplete #inlineCategoryAuto="matAutocomplete">
+              @for (option of categories(); track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        } @else {
+          <button
+            type="button"
+            class="category-cell"
+            (click)="startEditingCategory(book)"
+            aria-label="Edit category"
+          >
+            @if (book.category) {
+              <mat-chip-set>
+                <mat-chip>{{ book.category }}</mat-chip>
+              </mat-chip-set>
+            } @else {
+              <span class="category-cell-empty">Add category</span>
+            }
+          </button>
         }
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="myNote">
-      <th mat-header-cell *matHeaderCellDef>My note</th>
+    <ng-container matColumnDef="subcategory">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('subcategory', $event)">
+        Subgenre
+        @if (sortState('subcategory'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
       <td mat-cell *matCellDef="let book">
-        @if (book.myNote !== null) { {{ book.myNote }}/10 }
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="ranking">
-      <th mat-header-cell *matHeaderCellDef>Ranking</th>
-      <td mat-cell *matCellDef="let book">
-        @if (book.ranking; as ranking) {
-          🏆 #{{ ranking.categoryRank }}/{{ ranking.categoryTotal }}
-          @if (book.category) { in {{ book.category }} }
-          &middot; #{{ ranking.overallRank }}/{{ ranking.overallTotal }} overall
+        @if (editingSubcategoryId() === book.id) {
+          <mat-form-field appearance="outline" class="inline-edit-field">
+            <input
+              matInput
+              [ngModel]="subcategoryEditValue()"
+              (ngModelChange)="subcategoryEditValue.set($event)"
+              [matAutocomplete]="inlineSubcategoryAuto"
+              (blur)="commitSubcategoryEdit(book)"
+              (keydown.enter)="commitSubcategoryEdit(book)"
+            />
+            <mat-autocomplete #inlineSubcategoryAuto="matAutocomplete">
+              @for (option of subcategories(); track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        } @else {
+          <button
+            type="button"
+            class="category-cell"
+            (click)="startEditingSubcategory(book)"
+            aria-label="Edit subgenre"
+          >
+            @if (book.subcategory) {
+              <mat-chip-set>
+                <mat-chip>{{ book.subcategory }}</mat-chip>
+              </mat-chip-set>
+            } @else {
+              <span class="category-cell-empty">Add subgenre</span>
+            }
+          </button>
         }
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="recommend">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let book">
-        @if (book.recommend) { 👍 }
-      </td>
+    <ng-container matColumnDef="format">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('format', $event)">
+        Format
+        @if (sortState('format'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">{{ bookFormatLabel(book.format) }}</td>
     </ng-container>
 
     <ng-container matColumnDef="location">
-      <th mat-header-cell *matHeaderCellDef>Location</th>
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('location', $event)">
+        Location
+        @if (sortState('location'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">{{ book.locationId ? locationsService.findById(book.locationId)?.name : '' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('libraryStatus', $event)">
+        Collection status
+        @if (sortState('libraryStatus'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
       <td mat-cell *matCellDef="let book">
-        @if (book.locationId && locationName(book.locationId); as name) { 📍 {{ name }} }
+        <mat-select
+          class="inline-select"
+          [ngModel]="book.libraryStatus"
+          (ngModelChange)="updateLibraryStatus(book, $event)"
+        >
+          @for (option of libraryStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    <ng-container matColumnDef="reading">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('readingStatus', $event)">
+        Reading status
+        @if (sortState('readingStatus'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">
+        <mat-select
+          class="inline-select"
+          [ngModel]="book.readingStatus"
+          (ngModelChange)="updateReadingStatus(book, $event)"
+        >
+          @for (option of readingStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="favorite">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('favorite', $event)">
+        Favorite
+        @if (sortState('favorite'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">
+        <button
+          mat-icon-button
+          type="button"
+          (click)="toggleFavorite(book)"
+          [attr.aria-label]="book.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'"
+        >
+          <mat-icon>{{ book.isFavorite ? 'star' : 'star_border' }}</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('createdAt', $event)">
+        Added
+        @if (sortState('createdAt'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">{{ book.createdAt | date: 'mediumDate' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let book">
+        <a mat-icon-button [routerLink]="['/books', book.id]" aria-label="View and edit book">
+          <mat-icon>edit</mat-icon>
+        </a>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="deletingId() === book.id"
+          (click)="deleteBook(book)"
+          aria-label="Delete book"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns();"></tr>
   </table>
+  </div>
 }

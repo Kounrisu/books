@@ -6,20 +6,45 @@
   </a>
 </div>
 
-<div class="location-grid">
-  @for (location of locationsService.locations(); track location.id) {
-    <mat-card appearance="outlined" class="location-card">
-      @if (location.photoPath) {
-        <img mat-card-image [src]="apiBaseUrl + '/uploads/' + location.photoPath" [alt]="location.name" />
-      }
-      <mat-card-content>
-        <h3>{{ location.name }}</h3>
-        @if (location.latitude && location.longitude) {
-          <p class="coords">📍 {{ location.latitude }}, {{ location.longitude }}</p>
+@if (locationsService.error(); as errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
+
+@if (locationsService.loading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else {
+  <div class="location-grid">
+    @for (location of locationsService.locations(); track location.id) {
+      <mat-card appearance="outlined" class="location-card">
+        @if (location.photoPath) {
+          <img mat-card-image [src]="apiBaseUrl + '/uploads/' + location.photoPath" [alt]="location.name" />
         }
-      </mat-card-content>
-    </mat-card>
-  } @empty {
-    <p class="empty-state">No locations yet. Add your first one!</p>
-  }
-</div>
+        <mat-card-content>
+          <h3>{{ location.name }}</h3>
+          @if (location.latitude && location.longitude) {
+            <p class="coords">📍 {{ location.latitude }}, {{ location.longitude }}</p>
+          }
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button [routerLink]="['/locations', location.id, 'edit']">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </a>
+          <button
+            mat-button
+            type="button"
+            [disabled]="deletingId() === location.id"
+            (click)="deleteLocation(location)"
+          >
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    } @empty {
+      <p class="empty-state">No locations yet. Add your first one!</p>
+    }
+  </div>
+}

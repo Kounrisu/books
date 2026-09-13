@@ -1,6 +1,6 @@
 <mat-card appearance="outlined" class="form-card">
   <mat-card-header>
-    <mat-card-title>Add location</mat-card-title>
+    <mat-card-title>{{ isEditing() ? 'Edit location' : 'Add location' }}</mat-card-title>
   </mat-card-header>
   <mat-card-content>
     <form (ngSubmit)="submit()" class="stacked-form">
@@ -17,6 +17,8 @@
         <input #fileInput type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
         @if (photoFileName(); as name) {
           <span class="file-name">{{ name }}</span>
+        } @else if (existingPhotoPath()) {
+          <span class="file-name">Current photo kept (choose a new one to replace it)</span>
         }
       </div>
 
@@ -33,7 +35,17 @@
         }
       </div>
 
-      <button mat-flat-button color="primary" type="submit">Save location</button>
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <ng-container><mat-icon class="spin">progress_activity</mat-icon> Saving&hellip;</ng-container>
+        } @else {
+          {{ isEditing() ? 'Save changes' : 'Save location' }}
+        }
+      </button>
     </form>
   </mat-card-content>
 </mat-card>

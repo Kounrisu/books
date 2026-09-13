@@ -4,6 +4,7 @@
   </mat-card-header>
   <mat-card-content>
     <form (ngSubmit)="submit()" class="stacked-form">
+      <h3 class="section-title">Basics</h3>
       <mat-form-field appearance="outline">
         <mat-label>Title</mat-label>
         <input matInput [ngModel]="title()" (ngModelChange)="title.set($event)" name="title" required />
@@ -16,7 +17,36 @@
 
       <mat-form-field appearance="outline">
         <mat-label>Category</mat-label>
-        <input matInput [ngModel]="category()" (ngModelChange)="category.set($event)" name="category" />
+        <input
+          matInput
+          [ngModel]="category()"
+          (ngModelChange)="category.set($event)"
+          name="category"
+          [matAutocomplete]="categoryAuto"
+          placeholder="e.g. Sci-fi, Programming"
+        />
+        <mat-autocomplete #categoryAuto="matAutocomplete">
+          @for (option of categorySuggestions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Subgenre</mat-label>
+        <input
+          matInput
+          [ngModel]="subcategory()"
+          (ngModelChange)="subcategory.set($event)"
+          name="subcategory"
+          [matAutocomplete]="subcategoryAuto"
+          placeholder="e.g. Cyberpunk, JavaScript"
+        />
+        <mat-autocomplete #subcategoryAuto="matAutocomplete">
+          @for (option of subcategorySuggestions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -29,6 +59,7 @@
         <textarea matInput [ngModel]="description()" (ngModelChange)="description.set($event)" name="description"></textarea>
       </mat-form-field>
 
+      <h3 class="section-title">My rating &amp; notes</h3>
       <mat-form-field appearance="outline">
         <mat-label>My review</mat-label>
         <textarea matInput [ngModel]="myReview()" (ngModelChange)="myReview.set($event)" name="myReview"></textarea>
@@ -39,8 +70,150 @@
         <input matInput type="number" min="1" max="10" [ngModel]="myNote()" (ngModelChange)="myNote.set($event)" name="myNote" />
       </mat-form-field>
 
+      <mat-form-field appearance="outline">
+        <mat-label>Personal notes</mat-label>
+        <textarea matInput [ngModel]="personalNotes()" (ngModelChange)="personalNotes.set($event)" name="personalNotes"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Spoiler notes</mat-label>
+        <textarea
+          matInput
+          [ngModel]="spoilerNotes()"
+          (ngModelChange)="spoilerNotes.set($event)"
+          name="spoilerNotes"
+          placeholder="Hidden by default on the detail page"
+        ></textarea>
+      </mat-form-field>
+
       <mat-checkbox [ngModel]="recommend()" (ngModelChange)="recommend.set($event)" name="recommend">I recommend this book</mat-checkbox>
 
+      <mat-checkbox [ngModel]="isFavorite()" (ngModelChange)="isFavorite.set($event)" name="isFavorite">Favorite</mat-checkbox>
+
+      <h3 class="section-title">Status &amp; format</h3>
+      <mat-form-field appearance="outline">
+        <mat-label>Collection status</mat-label>
+        <mat-select [ngModel]="libraryStatus()" (ngModelChange)="libraryStatus.set($event)" name="libraryStatus">
+          @for (option of libraryStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Reading status</mat-label>
+        <mat-select [ngModel]="readingStatus()" (ngModelChange)="readingStatus.set($event)" name="readingStatus">
+          @for (option of readingStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Ownership</mat-label>
+        <mat-select [ngModel]="ownershipFormat()" (ngModelChange)="ownershipFormat.set($event)" name="ownershipFormat">
+          @for (option of ownershipFormatOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Book format</mat-label>
+        <mat-select [ngModel]="format()" (ngModelChange)="format.set($event)" name="format">
+          <mat-option value="">Not set</mat-option>
+          @for (option of bookFormatOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Physical status</mat-label>
+        <mat-select [ngModel]="physicalStatus()" (ngModelChange)="physicalStatus.set($event)" name="physicalStatus">
+          @for (option of physicalStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Metadata status</mat-label>
+        <mat-select [ngModel]="metadataStatus()" (ngModelChange)="metadataStatus.set($event)" name="metadataStatus">
+          @for (option of metadataStatusOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Saved list</mat-label>
+        <input
+          matInput
+          [ngModel]="savedList()"
+          (ngModelChange)="savedList.set($event)"
+          name="savedList"
+          placeholder="e.g. Project learning, Someday"
+        />
+      </mat-form-field>
+
+      <h3 class="section-title">Bibliographic details</h3>
+      <mat-form-field appearance="outline">
+        <mat-label>ISBN-10</mat-label>
+        <input matInput [ngModel]="isbn10()" (ngModelChange)="isbn10.set($event)" name="isbn10" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>ISBN-13</mat-label>
+        <input matInput [ngModel]="isbn13()" (ngModelChange)="isbn13.set($event)" name="isbn13" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Publisher</mat-label>
+        <input matInput [ngModel]="publisher()" (ngModelChange)="publisher.set($event)" name="publisher" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Publication year</mat-label>
+        <input matInput type="number" [ngModel]="publicationYear()" (ngModelChange)="publicationYear.set($event)" name="publicationYear" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Edition</mat-label>
+        <input matInput [ngModel]="edition()" (ngModelChange)="edition.set($event)" name="edition" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Page count</mat-label>
+        <input matInput type="number" [ngModel]="pageCount()" (ngModelChange)="pageCount.set($event)" name="pageCount" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Series name</mat-label>
+        <input matInput [ngModel]="seriesName()" (ngModelChange)="seriesName.set($event)" name="seriesName" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Series number</mat-label>
+        <input matInput [ngModel]="seriesNumber()" (ngModelChange)="seriesNumber.set($event)" name="seriesNumber" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Translator</mat-label>
+        <input matInput [ngModel]="translator()" (ngModelChange)="translator.set($event)" name="translator" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tags</mat-label>
+        <input matInput [ngModel]="tags()" (ngModelChange)="tags.set($event)" name="tags" placeholder="comma, separated, tags" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Condition</mat-label>
+        <input matInput [ngModel]="condition()" (ngModelChange)="condition.set($event)" name="condition" />
+      </mat-form-field>
+
+      <h3 class="section-title">Location &amp; purchase</h3>
       <mat-form-field appearance="outline">
         <mat-label>Location</mat-label>
         <mat-select [ngModel]="locationId()" (ngModelChange)="locationId.set($event)" name="locationId">
@@ -71,7 +244,17 @@
         }
       </div>
 
-      <button mat-flat-button color="primary" type="submit">Save book</button>
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <ng-container><mat-icon class="spin">progress_activity</mat-icon> Saving&hellip;</ng-container>
+        } @else {
+          Save book
+        }
+      </button>
     </form>
   </mat-card-content>
 </mat-card>

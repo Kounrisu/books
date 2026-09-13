@@ -1,0 +1,51 @@
+<div class="page-header">
+  <h1>Settings</h1>
+</div>
+
+@if (settingsService.error(); as errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
+
+<div class="settings-grid">
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Books page columns</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="hint">Choose which columns show up in your books table.</p>
+      <div class="checkbox-list">
+        @for (column of columns; track column.key) {
+          <mat-checkbox
+            [checked]="settingsService.isColumnVisible(column.key)"
+            (change)="toggleColumn(column.key, $event.checked)"
+          >
+            {{ column.label }}
+          </mat-checkbox>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Books page filters</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="hint">Choose which filters show up above your books table. A filter tied to a hidden column is hidden automatically.</p>
+      <div class="checkbox-list">
+        @for (filter of filters; track filter.key) {
+          <mat-checkbox
+            [checked]="settingsService.isFilterVisible(filter.key)"
+            [disabled]="filterDisabledReason(filter.key) !== null"
+            (change)="toggleFilter(filter.key, $event.checked)"
+          >
+            {{ filter.label }}
+            @if (filterDisabledReason(filter.key); as reason) {
+              <span class="hint-inline">({{ reason }})</span>
+            }
+          </mat-checkbox>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

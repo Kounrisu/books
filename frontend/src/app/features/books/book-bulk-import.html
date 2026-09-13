@@ -1,0 +1,248 @@
+<div class="page-header">
+  <h1>Import &amp; Export</h1>
+</div>
+
+<mat-card appearance="outlined" class="section-card">
+  <mat-card-header>
+    <mat-card-title>Bulk photo intake</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p class="hint">
+      Pick multiple cover photos to quickly create placeholder book records — one per
+      photo, titled from the filename and marked "needs metadata." Complete the details
+      later by editing each book, or export/enrich/import (below).
+    </p>
+
+    <div class="file-upload">
+      <button mat-stroked-button type="button" (click)="photosInput.click()">
+        <mat-icon>photo_library</mat-icon>
+        Choose cover photos
+      </button>
+      <input #photosInput type="file" accept="image/*" multiple hidden (change)="onPhotosSelected($event)" />
+      @if (photoFiles().length > 0) {
+        <span class="file-name">{{ photoFiles().length }} photo(s) selected</span>
+      }
+    </div>
+
+    <div class="defaults-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Default format</mat-label>
+        <mat-select [ngModel]="ownershipFormat()" (ngModelChange)="ownershipFormat.set($event)">
+          <mat-option value="">(none)</mat-option>
+          @for (option of ownershipFormatOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Default location</mat-label>
+        <mat-select [ngModel]="locationId()" (ngModelChange)="locationId.set($event)">
+          <mat-option value="">(none)</mat-option>
+          @for (location of locationsService.locations(); track location.id) {
+            <mat-option [value]="location.id">{{ location.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Default category</mat-label>
+        <input matInput [ngModel]="category()" (ngModelChange)="category.set($event)" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Default language</mat-label>
+        <input matInput [ngModel]="language()" (ngModelChange)="language.set($event)" />
+      </mat-form-field>
+    </div>
+
+    @if (bulkError()) {
+      <p class="error">{{ bulkError() }}</p>
+    }
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="submitting() || photoFiles().length === 0"
+      (click)="submitBulkImport()"
+    >
+      @if (submitting()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Importing&hellip;</ng-container>
+      } @else {
+        Import photos
+      }
+    </button>
+
+    @if (bulkResult(); as result) {
+      <div class="result">
+        <p>Created {{ result.created.length }} book(s).</p>
+        @if (result.errors.length > 0) {
+          <p class="error">{{ result.errors.length }} error(s):</p>
+          <ul>
+            @for (err of result.errors; track err.filename) {
+              <li>{{ err.filename }}: {{ err.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section-card">
+  <mat-card-header>
+    <mat-card-title>Export for AI-assisted enrichment</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p class="hint">
+      Export your library, complete the missing fields with an AI tool (ChatGPT, Claude,
+      Gemini), then import the enriched file back in below.
+    </p>
+
+    <mat-checkbox [ngModel]="onlyIncomplete()" (ngModelChange)="onlyIncomplete.set($event)">
+      Only export books needing metadata
+    </mat-checkbox>
+
+    @if (exportError()) {
+      <p class="error">{{ exportError() }}</p>
+    }
+
+    <div class="export-buttons">
+      <button mat-stroked-button type="button" [disabled]="exporting()" (click)="downloadExport('json')">
+        <mat-icon>download</mat-icon>
+        Export JSON
+      </button>
+      <button mat-stroked-button type="button" [disabled]="exporting()" (click)="downloadExport('csv')">
+        <mat-icon>download</mat-icon>
+        Export CSV
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section-card">
+  <mat-card-header>
+    <mat-card-title>Full local backup (photos + metadata)</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p class="hint">
+      Download a single .zip with every exported book's metadata AND a compressed copy of
+      its cover photo, keyed by book id. Unzip it locally to run the cover-recognition
+      script against the photos, then import the same folder back below to restore both
+      the metadata and the photos — this uses the "Only export books needing metadata"
+      checkbox above too.
+    </p>
+
+    @if (zipExportError()) {
+      <p class="error">{{ zipExportError() }}</p>
+    }
+
+    <button mat-stroked-button type="button" [disabled]="zipExporting()" (click)="downloadZipBackup()">
+      @if (zipExporting()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Building backup&hellip;</ng-container>
+      } @else {
+        <ng-container><mat-icon>archive</mat-icon> Download backup (.zip)</ng-container>
+      }
+    </button>
+
+    <div class="file-upload">
+      <button mat-stroked-button type="button" (click)="zipInput.click()">
+        <mat-icon>upload_file</mat-icon>
+        Choose backup .zip
+      </button>
+      <input #zipInput type="file" accept=".zip,application/zip" hidden (change)="onZipFileSelected($event)" />
+      @if (zipFile(); as file) {
+        <span class="file-name">{{ file.name }}</span>
+      }
+    </div>
+
+    @if (zipImportError()) {
+      <p class="error">{{ zipImportError() }}</p>
+    }
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="zipImporting() || !zipFile()"
+      (click)="submitZipImport()"
+    >
+      @if (zipImporting()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Importing&hellip;</ng-container>
+      } @else {
+        Import backup
+      }
+    </button>
+
+    @if (zipImportResult(); as result) {
+      <div class="result">
+        <p>Updated {{ result.updated.length }} book(s), including their photos where included.</p>
+        @if (result.errors.length > 0) {
+          <p class="error">{{ result.errors.length }} error(s):</p>
+          <ul>
+            @for (err of result.errors; track err.id) {
+              <li>{{ err.id }}: {{ err.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section-card">
+  <mat-card-header>
+    <mat-card-title>Import enriched metadata</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p class="hint">
+      Import a JSON file shaped like the export above (an array of book rows, each with
+      its <code>id</code>) to update matching books in bulk. CSV re-import isn't supported
+      yet — edit and re-save the exported JSON file instead.
+    </p>
+
+    <div class="file-upload">
+      <button mat-stroked-button type="button" (click)="importInput.click()">
+        <mat-icon>upload_file</mat-icon>
+        Choose JSON file
+      </button>
+      <input #importInput type="file" accept="application/json" hidden (change)="onImportFileSelected($event)" />
+      @if (importFile(); as file) {
+        <span class="file-name">{{ file.name }}</span>
+      }
+    </div>
+
+    @if (importError()) {
+      <p class="error">{{ importError() }}</p>
+    }
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="importing() || !importFile()"
+      (click)="submitImport()"
+    >
+      @if (importing()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Importing&hellip;</ng-container>
+      } @else {
+        Import JSON
+      }
+    </button>
+
+    @if (importResult(); as result) {
+      <div class="result">
+        <p>Updated {{ result.updated.length }} book(s).</p>
+        @if (result.errors.length > 0) {
+          <p class="error">{{ result.errors.length }} error(s):</p>
+          <ul>
+            @for (err of result.errors; track err.id) {
+              <li>{{ err.id }}: {{ err.message }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

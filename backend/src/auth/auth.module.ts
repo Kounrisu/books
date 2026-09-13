@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { AdminGuard } from './admin.guard.js';
 
 @Module({
   controllers: [AuthController],
@@ -9,7 +10,8 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
     { provide: 'JWT_SECRET', useValue: process.env.JWT_SECRET ?? 'dev-secret-change-me' },
     AuthService,
     JwtAuthGuard,
+    AdminGuard,
   ],
-  exports: [JwtAuthGuard, 'JWT_SECRET'],
+  exports: [JwtAuthGuard, AdminGuard, 'JWT_SECRET'],
 })
 export class AuthModule {}

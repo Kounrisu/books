@@ -1,0 +1,58 @@
+<mat-card appearance="outlined" class="form-card">
+  <mat-card-header>
+    <mat-card-title>{{ isEditing() ? 'Edit area' : 'Add area' }}</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form (ngSubmit)="submit()" class="stacked-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput [ngModel]="title()" (ngModelChange)="title.set($event)" name="title" required />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Kind</mat-label>
+        <mat-select [ngModel]="kind()" (ngModelChange)="kind.set($event)" name="kind">
+          @for (option of kindOptions; track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status</mat-label>
+        <mat-select [ngModel]="status()" (ngModelChange)="status.set($event)" name="status">
+          @for (option of statusOptions; track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Description</mat-label>
+        <textarea matInput [ngModel]="description()" (ngModelChange)="description.set($event)" name="description"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Objectives</mat-label>
+        <textarea matInput [ngModel]="objectives()" (ngModelChange)="objectives.set($event)" name="objectives"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes"></textarea>
+      </mat-form-field>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <ng-container><mat-icon class="spin">progress_activity</mat-icon> Saving&hellip;</ng-container>
+        } @else {
+          {{ isEditing() ? 'Save changes' : 'Save area' }}
+        }
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>

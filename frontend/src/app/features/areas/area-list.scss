@@ -1,0 +1,35 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.area-card h3 {
+  margin-bottom: 0.25rem;
+}
+
+.kind {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+  text-transform: capitalize;
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 2rem;
+}

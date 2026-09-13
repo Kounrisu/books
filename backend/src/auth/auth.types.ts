@@ -21,3 +21,10 @@ export class LoginInput {
 export interface AuthResult {
   accessToken: string;
 }
+
+export interface CurrentUserProfile {
+  id: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}

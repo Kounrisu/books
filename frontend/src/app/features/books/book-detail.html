@@ -1,0 +1,448 @@
+@if (booksService.loading() && !book()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (!book()) {
+  <p class="empty-state">This book could not be found.</p>
+  <a mat-stroked-button routerLink="/books">
+    <mat-icon>arrow_back</mat-icon>
+    Back to books
+  </a>
+} @else {
+  <div class="page-header">
+    <a mat-stroked-button routerLink="/books">
+      <mat-icon>arrow_back</mat-icon>
+      Back
+    </a>
+    <div class="actions">
+      @if (editMode()) {
+        <button mat-stroked-button type="button" (click)="cancelEdit()" [disabled]="saving()">
+          Cancel
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="saveEdit()" [disabled]="saving()">
+          @if (saving()) {
+            <ng-container><mat-icon class="spin">progress_activity</mat-icon> Saving&hellip;</ng-container>
+          } @else {
+            Save changes
+          }
+        </button>
+      } @else {
+        <button mat-stroked-button type="button" (click)="startEdit()">
+          <mat-icon>edit</mat-icon>
+          Edit
+        </button>
+        <button mat-stroked-button color="warn" type="button" (click)="deleteBook()" [disabled]="deleting()">
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <mat-card appearance="outlined" class="detail-card">
+    <div class="detail-layout">
+      <div class="cover-column">
+        @if (editMode()) {
+          @if (photoPreviewUrl(); as preview) {
+            <img class="cover" [src]="preview" [alt]="title()" />
+          } @else if (book()!.coverImagePath) {
+            <img class="cover" [src]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="title()" />
+          }
+          <button mat-stroked-button type="button" (click)="coverInput.click()">
+            <mat-icon>photo_camera</mat-icon>
+            Change photo
+          </button>
+          <input #coverInput type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
+        } @else if (book()!.coverImagePath) {
+          <img class="cover" [src]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="book()!.title" />
+        }
+      </div>
+
+      @if (editMode()) {
+        <form class="fields edit-form" (ngSubmit)="saveEdit()">
+          <fieldset class="field-group">
+            <legend>Basics</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>Title</mat-label>
+              <input matInput [ngModel]="title()" (ngModelChange)="title.set($event)" name="title" required />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Author</mat-label>
+              <input matInput [ngModel]="author()" (ngModelChange)="author.set($event)" name="author" required />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Category</mat-label>
+              <input
+                matInput
+                [ngModel]="category()"
+                (ngModelChange)="category.set($event)"
+                name="category"
+                [matAutocomplete]="categoryAuto"
+              />
+              <mat-autocomplete #categoryAuto="matAutocomplete">
+                @for (option of categorySuggestions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Subgenre</mat-label>
+              <input
+                matInput
+                [ngModel]="subcategory()"
+                (ngModelChange)="subcategory.set($event)"
+                name="subcategory"
+                [matAutocomplete]="subcategoryAuto"
+              />
+              <mat-autocomplete #subcategoryAuto="matAutocomplete">
+                @for (option of subcategorySuggestions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Language</mat-label>
+              <input matInput [ngModel]="language()" (ngModelChange)="language.set($event)" name="language" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Description</mat-label>
+              <textarea matInput [ngModel]="description()" (ngModelChange)="description.set($event)" name="description"></textarea>
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>My rating &amp; notes</legend>
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>My review</mat-label>
+              <textarea matInput [ngModel]="myReview()" (ngModelChange)="myReview.set($event)" name="myReview"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>My note (1-10)</mat-label>
+              <input matInput type="number" min="1" max="10" [ngModel]="myNote()" (ngModelChange)="myNote.set($event)" name="myNote" />
+            </mat-form-field>
+            <div class="checkbox-row">
+              <mat-checkbox [ngModel]="recommend()" (ngModelChange)="recommend.set($event)" name="recommend">I recommend this book</mat-checkbox>
+              <mat-checkbox [ngModel]="isFavorite()" (ngModelChange)="isFavorite.set($event)" name="isFavorite">Favorite</mat-checkbox>
+            </div>
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Personal notes</mat-label>
+              <textarea matInput [ngModel]="personalNotes()" (ngModelChange)="personalNotes.set($event)" name="personalNotes"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Spoiler notes</mat-label>
+              <textarea
+                matInput
+                [ngModel]="spoilerNotes()"
+                (ngModelChange)="spoilerNotes.set($event)"
+                name="spoilerNotes"
+                placeholder="Hidden by default on the detail page"
+              ></textarea>
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Ownership</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>Ownership</mat-label>
+              <mat-select [ngModel]="ownershipFormat()" (ngModelChange)="ownershipFormat.set($event)" name="ownershipFormat">
+                @for (option of ownershipFormatOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Physical status</mat-label>
+              <mat-select [ngModel]="physicalStatus()" (ngModelChange)="physicalStatus.set($event)" name="physicalStatus">
+                @for (option of physicalStatusOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Reading progress</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>Reading status</mat-label>
+              <mat-select [ngModel]="readingStatus()" (ngModelChange)="readingStatus.set($event)" name="readingStatus">
+                @for (option of readingStatusOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Wishlist / saved</legend>
+            <mat-form-field appearance="outline" class="span-2">
+              <mat-label>Saved list</mat-label>
+              <input
+                matInput
+                [ngModel]="savedList()"
+                (ngModelChange)="savedList.set($event)"
+                name="savedList"
+                placeholder="e.g. Project learning, Someday"
+              />
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Cataloging</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>Collection status</mat-label>
+              <mat-select [ngModel]="libraryStatus()" (ngModelChange)="libraryStatus.set($event)" name="libraryStatus">
+                @for (option of libraryStatusOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Metadata status</mat-label>
+              <mat-select [ngModel]="metadataStatus()" (ngModelChange)="metadataStatus.set($event)" name="metadataStatus">
+                @for (option of metadataStatusOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Book format</mat-label>
+              <mat-select [ngModel]="format()" (ngModelChange)="format.set($event)" name="format">
+                <mat-option value="">Not set</mat-option>
+                @for (option of bookFormatOptions; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Bibliographic details</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>ISBN-10</mat-label>
+              <input matInput [ngModel]="isbn10()" (ngModelChange)="isbn10.set($event)" name="isbn10" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>ISBN-13</mat-label>
+              <input matInput [ngModel]="isbn13()" (ngModelChange)="isbn13.set($event)" name="isbn13" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Publisher</mat-label>
+              <input matInput [ngModel]="publisher()" (ngModelChange)="publisher.set($event)" name="publisher" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Publication year</mat-label>
+              <input matInput type="number" [ngModel]="publicationYear()" (ngModelChange)="publicationYear.set($event)" name="publicationYear" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Edition</mat-label>
+              <input matInput [ngModel]="edition()" (ngModelChange)="edition.set($event)" name="edition" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Page count</mat-label>
+              <input matInput type="number" [ngModel]="pageCount()" (ngModelChange)="pageCount.set($event)" name="pageCount" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Series name</mat-label>
+              <input matInput [ngModel]="seriesName()" (ngModelChange)="seriesName.set($event)" name="seriesName" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Series number</mat-label>
+              <input matInput [ngModel]="seriesNumber()" (ngModelChange)="seriesNumber.set($event)" name="seriesNumber" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Translator</mat-label>
+              <input matInput [ngModel]="translator()" (ngModelChange)="translator.set($event)" name="translator" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Tags</mat-label>
+              <input matInput [ngModel]="tags()" (ngModelChange)="tags.set($event)" name="tags" placeholder="comma, separated, tags" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Condition</mat-label>
+              <input matInput [ngModel]="condition()" (ngModelChange)="condition.set($event)" name="condition" />
+            </mat-form-field>
+          </fieldset>
+
+          <fieldset class="field-group">
+            <legend>Location &amp; purchase</legend>
+            <mat-form-field appearance="outline">
+              <mat-label>Location</mat-label>
+              <mat-select [ngModel]="locationId()" (ngModelChange)="locationId.set($event)" name="locationId">
+                <mat-option value="">(none)</mat-option>
+                @for (location of locationsService.locations(); track location.id) {
+                  <mat-option [value]="location.id">{{ location.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Purchase date</mat-label>
+              <input matInput type="date" [ngModel]="purchaseDate()" (ngModelChange)="purchaseDate.set($event)" name="purchaseDate" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Purchase price</mat-label>
+              <input matInput type="number" step="0.01" [ngModel]="purchasePrice()" (ngModelChange)="purchasePrice.set($event)" name="purchasePrice" />
+            </mat-form-field>
+          </fieldset>
+        </form>
+      } @else {
+        <div class="fields">
+          <h1>{{ book()!.title }}</h1>
+          <h2>{{ book()!.author }}</h2>
+
+          <div class="chips">
+            @if (book()!.category) {
+              <mat-chip-set>
+                <mat-chip>{{ book()!.category }}</mat-chip>
+                @if (book()!.subcategory) {
+                  <mat-chip>{{ book()!.subcategory }}</mat-chip>
+                }
+              </mat-chip-set>
+            }
+            @if (book()!.isFavorite) {
+              <span class="favorite">⭐ Favorite</span>
+            }
+            @if (book()!.recommend) {
+              <span class="recommend">👍 Recommended</span>
+            }
+            @if (book()!.metadataStatus !== 'complete') {
+              <span class="metadata-badge">🏷️ {{ metadataStatusText() }}</span>
+            }
+          </div>
+
+          @if (book()!.tags.length > 0) {
+            <mat-chip-set class="tags">
+              @for (tag of book()!.tags; track tag) {
+                <mat-chip>{{ tag }}</mat-chip>
+              }
+            </mat-chip-set>
+          }
+
+          <dl>
+            @if (book()!.myNote !== null) {
+              <dt>My note</dt>
+              <dd>{{ book()!.myNote }}/10</dd>
+            }
+            <dt>Collection status</dt>
+            <dd>{{ statusLabel() }}</dd>
+            <dt>Reading status</dt>
+            <dd>{{ readingLabel() }}</dd>
+            <dt>Ownership</dt>
+            <dd>{{ formatLabel() }}</dd>
+            @if (book()!.format) {
+              <dt>Format</dt>
+              <dd>{{ book()!.format }}</dd>
+            }
+            <dt>Physical status</dt>
+            <dd>{{ physicalStatusText() }}</dd>
+            @if (book()!.savedList) {
+              <dt>Saved list</dt>
+              <dd>{{ book()!.savedList }}</dd>
+            }
+            @if (book()!.language) {
+              <dt>Language</dt>
+              <dd>{{ book()!.language }}</dd>
+            }
+            @if (locationName(); as name) {
+              <dt>Location</dt>
+              <dd>📍 {{ name }}</dd>
+            }
+            @if (book()!.purchaseDate) {
+              <dt>Purchase date</dt>
+              <dd>{{ book()!.purchaseDate!.slice(0, 10) }}</dd>
+            }
+            @if (book()!.purchasePrice) {
+              <dt>Purchase price</dt>
+              <dd>{{ book()!.purchasePrice }}</dd>
+            }
+            @if (book()!.isbn13 || book()!.isbn10) {
+              <dt>ISBN</dt>
+              <dd>{{ book()!.isbn13 || book()!.isbn10 }}</dd>
+            }
+            @if (book()!.publisher) {
+              <dt>Publisher</dt>
+              <dd>{{ book()!.publisher }}</dd>
+            }
+            @if (book()!.publicationYear) {
+              <dt>Publication year</dt>
+              <dd>{{ book()!.publicationYear }}</dd>
+            }
+            @if (book()!.edition) {
+              <dt>Edition</dt>
+              <dd>{{ book()!.edition }}</dd>
+            }
+            @if (book()!.pageCount) {
+              <dt>Pages</dt>
+              <dd>{{ book()!.pageCount }}</dd>
+            }
+            @if (book()!.seriesName) {
+              <dt>Series</dt>
+              <dd>{{ book()!.seriesName }} @if (book()!.seriesNumber) { #{{ book()!.seriesNumber }} }</dd>
+            }
+            @if (book()!.translator) {
+              <dt>Translator</dt>
+              <dd>{{ book()!.translator }}</dd>
+            }
+            @if (book()!.condition) {
+              <dt>Condition</dt>
+              <dd>{{ book()!.condition }}</dd>
+            }
+          </dl>
+
+          @if (book()!.description) {
+            <h3>Description</h3>
+            <p>{{ book()!.description }}</p>
+          }
+
+          @if (book()!.myReview) {
+            <h3>My review</h3>
+            <p>{{ book()!.myReview }}</p>
+          }
+
+          @if (book()!.personalNotes) {
+            <h3>Personal notes</h3>
+            <p>{{ book()!.personalNotes }}</p>
+          }
+
+          @if (book()!.spoilerNotes) {
+            <h3>Spoiler notes</h3>
+            @if (!showSpoilers()) {
+              <button mat-stroked-button type="button" (click)="showSpoilers.set(true)">
+                <mat-icon>visibility</mat-icon>
+                Show spoilers
+              </button>
+            } @else {
+              <p class="spoiler">{{ book()!.spoilerNotes }}</p>
+            }
+          }
+
+          <h3>Lending</h3>
+          @if (activeLoan(); as loan) {
+            <p>Currently lent to <strong>{{ loan.borrowerName }}</strong> since {{ loan.borrowedAt.slice(0, 10) }}.</p>
+            <button mat-stroked-button type="button" (click)="returnBook()" [disabled]="lending()">
+              <mat-icon>assignment_return</mat-icon>
+              Mark returned
+            </button>
+          } @else {
+            <div class="lend-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Lend to</mat-label>
+                <input matInput [ngModel]="borrowerName()" (ngModelChange)="borrowerName.set($event)" />
+              </mat-form-field>
+              <button mat-stroked-button type="button" (click)="lendBook()" [disabled]="lending() || !borrowerName().trim()">
+                <mat-icon>send</mat-icon>
+                Lend
+              </button>
+            </div>
+          }
+          @if (lendError()) {
+            <p class="error">{{ lendError() }}</p>
+          }
+        </div>
+      }
+    </div>
+  </mat-card>
+}

@@ -1,8 +1,14 @@
-import { Injectable, ConflictException, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { AuthResult } from './auth.types.js';
+import type { AuthResult, CurrentUserProfile } from './auth.types.js';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +40,17 @@ export class AuthService {
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!user.isActive) {
+      throw new UnauthorizedException('This account has been disabled');
+    }
     return { accessToken: this.jwt.sign({ sub: user.id }) };
+  }
+
+  async me(userId: string): Promise<CurrentUserProfile> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return { id: user.id, email: user.email, role: user.role, isActive: user.isActive };
   }
 }

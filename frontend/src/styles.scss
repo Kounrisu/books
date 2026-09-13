@@ -49,3 +49,16 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 mat-form-field {
   width: 100%;
 }
+
+// Spinning icon used as an inline "submitting" indicator on buttons
+// (see book-form/location-form), instead of pulling in mat-progress-spinner
+// just for a 24px inline icon.
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

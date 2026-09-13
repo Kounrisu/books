@@ -1,0 +1,80 @@
+<div class="page-header">
+  <h1>Timeline</h1>
+</div>
+
+<mat-card appearance="outlined" class="add-event-card">
+  <mat-card-header>
+    <mat-card-title>Add an event</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form (ngSubmit)="submit()" class="event-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput [ngModel]="title()" (ngModelChange)="title.set($event)" name="title" required />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Event type</mat-label>
+        <mat-select [ngModel]="eventType()" (ngModelChange)="eventType.set($event)" name="eventType">
+          @for (option of eventTypeOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Book (optional)</mat-label>
+        <mat-select [ngModel]="bookId()" (ngModelChange)="bookId.set($event)" name="bookId">
+          <mat-option value="">No specific book</mat-option>
+          @for (book of booksService.books(); track book.id) {
+            <mat-option [value]="book.id">{{ book.title }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Date</mat-label>
+        <input matInput type="date" [ngModel]="occurredAt()" (ngModelChange)="occurredAt.set($event)" name="occurredAt" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput [ngModel]="notes()" (ngModelChange)="notes.set($event)" name="notes"></textarea>
+      </mat-form-field>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting() || !title().trim()">
+        Add event
+      </button>
+    </form>
+  </mat-card-content>
+</mat-card>
+
+@if (timelineService.loading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (timelineService.events().length === 0) {
+  <p class="empty-state">No timeline events yet.</p>
+} @else {
+  <ul class="event-list">
+    @for (event of timelineService.events(); track event.id) {
+      <li class="event-item">
+        <span class="event-icon">{{ iconFor(event.eventType) }}</span>
+        <div class="event-body">
+          <div class="event-title">{{ event.title }}</div>
+          <div class="event-meta">
+            {{ event.occurredAt.slice(0, 10) }}
+            @if (bookTitle(event.bookId); as name) { &middot; {{ name }} }
+          </div>
+          @if (event.notes) {
+            <div class="event-notes">{{ event.notes }}</div>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+}

@@ -23,6 +23,11 @@ describe('AuthService', () => {
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/auth/login`);
     expect(req.request.method).toBe('POST');
     req.flush({ accessToken: 'token-abc' });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    const meReq = httpMock.expectOne(`${environment.apiBaseUrl}/auth/me`);
+    meReq.flush({ id: 'user-1', email: 'a@b.com', role: 'user', isActive: true });
     await loginPromise;
 
     expect(service.token()).toBe('token-abc');

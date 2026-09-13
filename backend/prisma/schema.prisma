@@ -9,12 +9,19 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String     @map("password_hash")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  locations    Location[]
-  books        Book[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String               @map("password_hash")
+  role                String               @default("user")
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  locations           Location[]
+  books               Book[]
+  bookLoans           BookLoan[]
+  timelineEvents      BookTimelineEvent[]
+  collectionAreas     CollectionArea[]
+  collectionAreaBooks CollectionAreaBook[]
+  settings            UserSettings?
 
   @@map("users")
 }
@@ -22,7 +29,7 @@ model User {
 model Location {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   photoPath String?  @map("photo_path")
   latitude  Float?
@@ -36,22 +43,174 @@ model Location {
 model Book {
   id             String    @id @default(cuid())
   userId         String    @map("user_id")
-  user           User      @relation(fields: [userId], references: [id])
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title          String
   author         String
   category       String?
+  subcategory    String?
   language       String?
   description    String?
   myReview       String?   @map("my_review")
   myNote         Int?      @map("my_note")
   recommend      Boolean?
+  isFavorite     Boolean   @default(false) @map("is_favorite")
   coverImagePath String?   @map("cover_image_path")
   locationId     String?   @map("location_id")
-  location       Location? @relation(fields: [locationId], references: [id])
+  location       Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   purchaseDate   DateTime? @map("purchase_date")
   purchasePrice  Decimal?  @map("purchase_price") @db.Decimal(10, 2)
+  ownershipFormat String   @default("physical") @map("ownership_format")
+  physicalStatus String    @default("in_collection") @map("physical_status")
+  libraryStatus  String    @default("owned") @map("library_status")
+  readingStatus  String    @default("unread") @map("reading_status")
+  savedList      String?   @map("saved_list")
+  externalRating Decimal?  @map("external_rating") @db.Decimal(3, 1)
+  externalRank   String?   @map("external_rank")
+  externalSource String?   @map("external_source")
+  personalNotes  String?   @map("personal_notes")
+  spoilerNotes   String?   @map("spoiler_notes")
+  metadataStatus String    @default("complete") @map("metadata_status")
   source         String    @default("manual")
   createdAt      DateTime  @default(now()) @map("created_at")
 
+  // Phase 4: rich metadata. The commonly-useful fields below are wired into
+  // the add/edit form and detail page. The rest (original title/language,
+  // physical format, contributors beyond translator, genres/subjects/
+  // audience, copy-level details, acquisition details, ebook file details,
+  // external ids, metadata review tracking, duplicate detection, quotes,
+  // content warnings) are schema/API-only for now, same "keep the model,
+  // don't use it in the front yet" pattern as `externalRating` — add UI for
+  // them only when specifically requested, to keep the form usable.
+  isbn10           String?   @map("isbn_10")
+  isbn13           String?   @map("isbn_13")
+  publisher        String?
+  publicationYear  Int?      @map("publication_year")
+  edition          String?
+  pageCount        Int?      @map("page_count")
+  seriesName       String?   @map("series_name")
+  seriesNumber     String?   @map("series_number")
+  translator       String?
+  tags             String[]  @default([])
+  condition        String?
+
+  originalTitle      String?   @map("original_title")
+  originalLanguage   String?   @map("original_language")
+  format             String?
+  illustrator        String?
+  editor             String?
+  contributors       Json?
+  genres             String[] @default([])
+  subjects           String[] @default([])
+  audience           String?
+  inventoryCode      String?   @map("inventory_code")
+  barcode            String?
+  copyNotes          String?   @map("copy_notes")
+  dimensions         String?
+  weight             String?
+  acquisitionSource  String?   @map("acquisition_source")
+  acquisitionType    String?   @map("acquisition_type")
+  currency           String?
+  purchaseDateText   String?   @map("purchase_date_text")
+  ebookFormat        String?   @map("ebook_format")
+  ebookSource        String?   @map("ebook_source")
+  ebookFilePath      String?   @map("ebook_file_path")
+  drmStatus          String?   @map("drm_status")
+  externalIds        Json?     @map("external_ids")
+  sourceUrl          String?   @map("source_url")
+  metadataConfidence String?   @map("metadata_confidence")
+  metadataReviewedAt DateTime? @map("metadata_reviewed_at")
+  duplicateGroupId   String?   @map("duplicate_group_id")
+  possibleDuplicate  Boolean   @default(false) @map("possible_duplicate")
+  quotes             Json?
+  contentWarnings    String[] @default([]) @map("content_warnings")
+
+  loans    BookLoan[]
+  timeline BookTimelineEvent[]
+  areas    CollectionAreaBook[]
+
   @@map("books")
+}
+
+// Phase 5: borrowing and timeline. A unified event log (per the spec's
+// optional "denormalized/event-log model") drives the Timeline page and
+// covers reading, acquisition, external borrow/rental, lending, and
+// lost/found events. `BookLoan` is kept as its own small table (rather than
+// folded into the event log) because "who currently has this book" needs to
+// be queried directly, not derived from scanning events.
+model BookLoan {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId       String    @map("book_id")
+  book         Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  borrowerName String    @map("borrower_name")
+  borrowedAt   DateTime  @map("borrowed_at")
+  returnedAt   DateTime? @map("returned_at")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("book_loans")
+}
+
+model BookTimelineEvent {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId     String?  @map("book_id")
+  book       Book?    @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  eventType  String   @map("event_type")
+  occurredAt DateTime @map("occurred_at")
+  title      String
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("book_timeline_events")
+}
+
+// Phase 6: collection areas (genre/media-type/subject/learning workspaces).
+model CollectionArea {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  kind        String
+  description String?
+  objectives  String?
+  notes       String?
+  status      String    @default("active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  books       CollectionAreaBook[]
+
+  @@map("collection_areas")
+}
+
+model CollectionAreaBook {
+  id             String         @id @default(cuid())
+  userId         String         @map("user_id")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  areaId         String         @map("area_id")
+  area           CollectionArea @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  bookId         String         @map("book_id")
+  book           Book           @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  areaLevel      String?        @map("area_level")
+  priority       String?
+  relationStatus String?        @map("relation_status")
+  notes          String?
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  @@unique([areaId, bookId])
+  @@map("collection_area_books")
+}
+
+// Phase 8: per-user UI preferences (books-page column/filter visibility).
+model UserSettings {
+  id             String   @id @default(cuid())
+  userId         String   @unique @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visibleColumns Json?    @map("visible_columns")
+  visibleFilters Json?    @map("visible_filters")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("user_settings")
 }

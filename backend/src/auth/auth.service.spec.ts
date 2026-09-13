@@ -37,7 +37,9 @@ describe('AuthService', () => {
   it('logs in with correct credentials', async () => {
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.hash('password123', 10);
-    const prisma = makePrismaMock({ findUnique: { id: 'user-1', email: 'a@b.com', passwordHash } });
+    const prisma = makePrismaMock({
+      findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: true },
+    });
     const service = new AuthService(prisma, 'test-secret');
 
     const result = await service.login('a@b.com', 'password123');
@@ -48,9 +50,24 @@ describe('AuthService', () => {
   it('rejects login with wrong password', async () => {
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.hash('password123', 10);
-    const prisma = makePrismaMock({ findUnique: { id: 'user-1', email: 'a@b.com', passwordHash } });
+    const prisma = makePrismaMock({
+      findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: true },
+    });
     const service = new AuthService(prisma, 'test-secret');
 
     await expect(service.login('a@b.com', 'wrong')).rejects.toThrow('Invalid credentials');
+  });
+
+  it('rejects login for a disabled account', async () => {
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.hash('password123', 10);
+    const prisma = makePrismaMock({
+      findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: false },
+    });
+    const service = new AuthService(prisma, 'test-secret');
+
+    await expect(service.login('a@b.com', 'password123')).rejects.toThrow(
+      'This account has been disabled',
+    );
   });
 });

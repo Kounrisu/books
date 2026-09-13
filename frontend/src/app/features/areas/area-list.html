@@ -1,0 +1,47 @@
+<div class="page-header">
+  <h1>Collection Areas</h1>
+  <a mat-flat-button color="primary" routerLink="/areas/new">
+    <mat-icon>add</mat-icon>
+    Add area
+  </a>
+</div>
+
+@if (areasService.error(); as errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
+
+@if (areasService.loading()) {
+  <div class="loading-state">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else {
+  <div class="area-grid">
+    @for (area of areasService.areas(); track area.id) {
+      <mat-card appearance="outlined" class="area-card">
+        <mat-card-content>
+          <h3>{{ area.title }}</h3>
+          <p class="kind">{{ area.kind }} &middot; {{ area.status }}</p>
+          @if (area.description) {
+            <p class="description">{{ area.description }}</p>
+          }
+        </mat-card-content>
+        <mat-card-actions>
+          <a mat-button [routerLink]="['/areas', area.id]">
+            <mat-icon>visibility</mat-icon>
+            View
+          </a>
+          <a mat-button [routerLink]="['/areas', area.id, 'edit']">
+            <mat-icon>edit</mat-icon>
+            Edit
+          </a>
+          <button mat-button type="button" [disabled]="deletingId() === area.id" (click)="deleteArea(area)">
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    } @empty {
+      <p class="empty-state">No collection areas yet. Add your first one!</p>
+    }
+  </div>
+}

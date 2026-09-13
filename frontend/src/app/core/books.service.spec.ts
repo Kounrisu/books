@@ -15,14 +15,13 @@ describe('BooksService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('loads books with their ranking into the books signal', async () => {
+  it('loads books into the books signal', async () => {
     const loadPromise = service.load();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/books`);
-    req.flush([{ id: 'book-1', title: 'Dune', ranking: { categoryRank: 1, categoryTotal: 1, overallRank: 1, overallTotal: 1 } }]);
+    req.flush([{ id: 'book-1', title: 'Dune' }]);
     await loadPromise;
 
     expect(service.books()[0].title).toBe('Dune');
-    expect(service.books()[0].ranking?.categoryRank).toBe(1);
   });
 
   it('posts form data to create a book and reloads the list', async () => {
@@ -37,7 +36,7 @@ describe('BooksService', () => {
     await Promise.resolve();
     await Promise.resolve();
     const reloadReq = httpMock.expectOne(`${environment.apiBaseUrl}/books`);
-    reloadReq.flush([{ id: 'book-1', title: 'Dune', ranking: null }]);
+    reloadReq.flush([{ id: 'book-1', title: 'Dune' }]);
     await createPromise;
 
     expect(service.books().length).toBe(1);

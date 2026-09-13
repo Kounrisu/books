@@ -1,7 +1,9 @@
-import { extname } from 'node:path';
+import { extname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { diskStorage } from 'multer';
 import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface.js';
+
+export const UPLOADS_DIR = join(process.cwd(), 'uploads');
 
 export function generateUploadFilename(originalName: string): string {
   const ext = extname(originalName).toLowerCase();

@@ -2,36 +2,75 @@
   <mat-toolbar color="primary">
     <span class="brand">📚 Books Management</span>
     <span class="spacer"></span>
-    <a mat-button routerLink="/books">
-      <mat-icon>menu_book</mat-icon>
-      Books
-    </a>
-    <a mat-button routerLink="/locations">
-      <mat-icon>place</mat-icon>
-      Locations
-    </a>
-    <a mat-button routerLink="/areas">
-      <mat-icon>category</mat-icon>
-      Areas
-    </a>
-    <a mat-button routerLink="/timeline">
-      <mat-icon>history</mat-icon>
-      Timeline
-    </a>
-    @if (authService.isAdmin()) {
-      <a mat-button routerLink="/admin">
-        <mat-icon>admin_panel_settings</mat-icon>
-        Admin
+
+    <nav class="nav-links">
+      <a mat-button routerLink="/books">
+        <mat-icon>menu_book</mat-icon>
+        Books
       </a>
-    }
-    <a mat-button routerLink="/settings">
-      <mat-icon>settings</mat-icon>
-      Settings
-    </a>
-    <button mat-button type="button" (click)="logout()">
-      <mat-icon>logout</mat-icon>
-      Logout
+      <a mat-button routerLink="/locations">
+        <mat-icon>place</mat-icon>
+        Locations
+      </a>
+      <a mat-button routerLink="/areas">
+        <mat-icon>category</mat-icon>
+        Areas
+      </a>
+      <a mat-button routerLink="/timeline">
+        <mat-icon>history</mat-icon>
+        Timeline
+      </a>
+      @if (authService.isAdmin()) {
+        <a mat-button routerLink="/admin">
+          <mat-icon>admin_panel_settings</mat-icon>
+          Admin
+        </a>
+      }
+      <a mat-button routerLink="/settings">
+        <mat-icon>settings</mat-icon>
+        Settings
+      </a>
+      <button mat-button type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Logout
+      </button>
+    </nav>
+
+    <button mat-icon-button class="nav-menu-trigger" type="button" [matMenuTriggerFor]="navMenu" aria-label="Open navigation menu">
+      <mat-icon>menu</mat-icon>
     </button>
+    <mat-menu #navMenu="matMenu">
+      <a mat-menu-item routerLink="/books">
+        <mat-icon>menu_book</mat-icon>
+        Books
+      </a>
+      <a mat-menu-item routerLink="/locations">
+        <mat-icon>place</mat-icon>
+        Locations
+      </a>
+      <a mat-menu-item routerLink="/areas">
+        <mat-icon>category</mat-icon>
+        Areas
+      </a>
+      <a mat-menu-item routerLink="/timeline">
+        <mat-icon>history</mat-icon>
+        Timeline
+      </a>
+      @if (authService.isAdmin()) {
+        <a mat-menu-item routerLink="/admin">
+          <mat-icon>admin_panel_settings</mat-icon>
+          Admin
+        </a>
+      }
+      <a mat-menu-item routerLink="/settings">
+        <mat-icon>settings</mat-icon>
+        Settings
+      </a>
+      <button mat-menu-item type="button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Logout
+      </button>
+    </mat-menu>
   </mat-toolbar>
 }
 <main class="app-content">

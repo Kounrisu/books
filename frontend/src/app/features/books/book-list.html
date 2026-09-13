@@ -359,4 +359,94 @@
     <tr mat-row *matRowDef="let row; columns: displayedColumns();"></tr>
   </table>
   </div>
+
+  <div class="book-cards">
+    @for (book of filteredBooks(); track book.id) {
+      <div class="book-card">
+        <div class="book-card-top">
+          @if (book.coverImagePath) {
+            <img class="cover-thumb" [src]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
+          } @else {
+            <div class="cover-thumb cover-thumb-empty"><mat-icon>menu_book</mat-icon></div>
+          }
+          <div class="book-card-main">
+            <a [routerLink]="['/books', book.id]" class="book-card-title">{{ book.title }}</a>
+            <div class="book-card-author">{{ book.author }}</div>
+          </div>
+          <button
+            mat-icon-button
+            type="button"
+            (click)="toggleFavorite(book)"
+            [attr.aria-label]="book.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'"
+          >
+            <mat-icon>{{ book.isFavorite ? 'star' : 'star_border' }}</mat-icon>
+          </button>
+        </div>
+
+        @if (displayedColumns().includes('category') || displayedColumns().includes('subcategory')) {
+          <div class="book-card-chips">
+            @if (displayedColumns().includes('category') && book.category) {
+              <mat-chip-set><mat-chip>{{ book.category }}</mat-chip></mat-chip-set>
+            }
+            @if (displayedColumns().includes('subcategory') && book.subcategory) {
+              <mat-chip-set><mat-chip>{{ book.subcategory }}</mat-chip></mat-chip-set>
+            }
+          </div>
+        }
+
+        <div class="book-card-selects">
+          @if (displayedColumns().includes('status')) {
+            <mat-select
+              class="inline-select"
+              [ngModel]="book.libraryStatus"
+              (ngModelChange)="updateLibraryStatus(book, $event)"
+            >
+              @for (option of libraryStatusOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          }
+          @if (displayedColumns().includes('reading')) {
+            <mat-select
+              class="inline-select"
+              [ngModel]="book.readingStatus"
+              (ngModelChange)="updateReadingStatus(book, $event)"
+            >
+              @for (option of readingStatusOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          }
+        </div>
+
+        <div class="book-card-meta">
+          @if (displayedColumns().includes('format') && book.format) {
+            <span>{{ bookFormatLabel(book.format) }}</span>
+          }
+          @if (displayedColumns().includes('location') && book.locationId) {
+            <span>📍 {{ locationsService.findById(book.locationId)?.name }}</span>
+          }
+          @if (displayedColumns().includes('createdAt')) {
+            <span>{{ book.createdAt | date: 'mediumDate' }}</span>
+          }
+        </div>
+
+        <div class="book-card-actions">
+          <a mat-stroked-button [routerLink]="['/books', book.id]">
+            <mat-icon>edit</mat-icon>
+            View / edit
+          </a>
+          <button
+            mat-icon-button
+            type="button"
+            [disabled]="deletingId() === book.id"
+            (click)="deleteBook(book)"
+            aria-label="Delete book"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
 }

@@ -133,6 +133,104 @@
   }
 }
 
+.book-cards {
+  display: none;
+}
+
+// Below this width the table needs horizontal scrolling to see more than
+// cover + title, which is unusable on a phone — switch to a card list
+// instead. Cards keep the same inline-editable controls (favorite,
+// collection/reading status) as the table, just stacked.
+@media (max-width: 700px) {
+  .table-scroll {
+    display: none;
+  }
+
+  .book-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.book-card {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: var(--mat-sys-surface);
+}
+
+.book-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.book-card .cover-thumb {
+  width: 48px;
+  height: 68px;
+  flex-shrink: 0;
+}
+
+.cover-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mat-sys-surface-variant);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.book-card-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.book-card-title {
+  display: block;
+  font-weight: 500;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.book-card-author {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9rem;
+}
+
+.book-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.book-card-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.book-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.book-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
 @media (max-width: 600px) {
   .page-header {
     flex-direction: column;

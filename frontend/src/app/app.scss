@@ -13,3 +13,35 @@
   padding: 1.5rem;
   box-sizing: border-box;
 }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+}
+
+.nav-menu-trigger {
+  display: none;
+}
+
+// Below this width the full link row doesn't fit the toolbar (it was
+// overflowing off-screen on a phone) — collapse into a menu instead.
+@media (max-width: 720px) {
+  .brand {
+    font-size: 1rem;
+    margin-right: 0.5rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .nav-menu-trigger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-content {
+    padding: 1rem;
+  }
+}

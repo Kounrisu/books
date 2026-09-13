@@ -4,12 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { LocationsService } from '../../core/locations.service';
 
 @Component({
   selector: 'app-location-form',
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule, MatIconModule],
   templateUrl: './location-form.html',
+  styleUrl: './location-form.scss',
 })
 export class LocationFormComponent {
   private readonly locationsService = inject(LocationsService);
@@ -23,6 +26,10 @@ export class LocationFormComponent {
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.photoFile.set(input.files?.[0] ?? null);
+  }
+
+  protected photoFileName(): string | undefined {
+    return this.photoFile()?.name;
   }
 
   captureLocation(): void {

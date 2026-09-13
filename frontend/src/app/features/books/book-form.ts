@@ -6,13 +6,25 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { BooksService } from '../../core/books.service';
 import { LocationsService } from '../../core/locations.service';
 
 @Component({
   selector: 'app-book-form',
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButtonModule],
+  imports: [
+    FormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+  ],
   templateUrl: './book-form.html',
+  styleUrl: './book-form.scss',
 })
 export class BookFormComponent implements OnInit {
   private readonly booksService = inject(BooksService);
@@ -42,6 +54,10 @@ export class BookFormComponent implements OnInit {
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.photoFile.set(input.files?.[0] ?? null);
+  }
+
+  protected photoFileName(): string | undefined {
+    return this.photoFile()?.name;
   }
 
   async submit(): Promise<void> {

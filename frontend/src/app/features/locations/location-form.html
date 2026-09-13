@@ -1,18 +1,39 @@
-<form (ngSubmit)="submit()">
-  <mat-form-field>
-    <mat-label>Name</mat-label>
-    <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" required />
-  </mat-form-field>
+<mat-card appearance="outlined" class="form-card">
+  <mat-card-header>
+    <mat-card-title>Add location</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <form (ngSubmit)="submit()" class="stacked-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" required />
+      </mat-form-field>
 
-  <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+      <div class="file-upload">
+        <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <mat-icon>photo_camera</mat-icon>
+          Choose photo
+        </button>
+        <input #fileInput type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
+        @if (photoFileName(); as name) {
+          <span class="file-name">{{ name }}</span>
+        }
+      </div>
 
-  <button mat-stroked-button type="button" (click)="captureLocation()">Capture current location</button>
-  @if (coordinates(); as coords) {
-    <p>Captured: {{ coords.lat }}, {{ coords.lng }}</p>
-  }
-  @if (geolocationError()) {
-    <p class="error">{{ geolocationError() }}</p>
-  }
+      <div class="geolocation">
+        <button mat-stroked-button type="button" (click)="captureLocation()">
+          <mat-icon>my_location</mat-icon>
+          Capture current location
+        </button>
+        @if (coordinates(); as coords) {
+          <p>Captured: {{ coords.lat }}, {{ coords.lng }}</p>
+        }
+        @if (geolocationError()) {
+          <p class="error">{{ geolocationError() }}</p>
+        }
+      </div>
 
-  <button mat-raised-button color="primary" type="submit">Save location</button>
-</form>
+      <button mat-raised-button color="primary" type="submit">Save location</button>
+    </form>
+  </mat-card-content>
+</mat-card>

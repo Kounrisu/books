@@ -1,0 +1,31 @@
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.location-card {
+  img[mat-card-image] {
+    height: 160px;
+    object-fit: cover;
+  }
+
+  .coords {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.875rem;
+  }
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 2rem;
+}

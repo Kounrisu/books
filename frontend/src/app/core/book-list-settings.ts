@@ -16,6 +16,12 @@ export const CONFIGURABLE_COLUMNS: BookColumnConfig[] = [
   { key: 'itemType', label: 'Type', filterKey: 'itemType' },
   { key: 'category', label: 'Category', filterKey: 'category' },
   { key: 'subcategory', label: 'Subgenre', filterKey: 'subcategory' },
+  // Only meaningful for magazine/manga/bd/manhwa rows, where `title` alone
+  // doesn't identify the item the way it does for a book — see itemType's
+  // schema comment for why these reuse seriesName/seriesNumber rather than
+  // adding dedicated fields.
+  { key: 'seriesName', label: 'Series' },
+  { key: 'seriesNumber', label: 'Issue / volume' },
   { key: 'format', label: 'Format' },
   { key: 'location', label: 'Location', filterKey: 'location' },
   { key: 'status', label: 'Collection status', filterKey: 'libraryStatus' },
@@ -31,6 +37,8 @@ export const BOOK_COLUMN_ORDER = [
   'title',
   'author',
   'itemType',
+  'seriesName',
+  'seriesNumber',
   'category',
   'subcategory',
   'format',

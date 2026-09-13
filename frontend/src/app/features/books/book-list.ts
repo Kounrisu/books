@@ -33,6 +33,8 @@ export type SortField =
   | 'itemType'
   | 'category'
   | 'subcategory'
+  | 'seriesName'
+  | 'seriesNumber'
   | 'format'
   | 'location'
   | 'favorite'
@@ -55,6 +57,8 @@ const SORTABLE_FIELDS: SortField[] = [
   'itemType',
   'category',
   'subcategory',
+  'seriesName',
+  'seriesNumber',
   'format',
   'location',
   'favorite',
@@ -166,7 +170,7 @@ export class BookListComponent implements OnInit {
         return false;
       }
       if (query) {
-        const haystack = [book.title, book.author, book.description, book.myReview]
+        const haystack = [book.title, book.author, book.seriesName, book.seriesNumber, book.description, book.myReview]
           .filter((value): value is string => !!value)
           .join(' ')
           .toLowerCase();
@@ -421,6 +425,10 @@ export class BookListComponent implements OnInit {
         return book.category?.toLowerCase() ?? null;
       case 'subcategory':
         return book.subcategory?.toLowerCase() ?? null;
+      case 'seriesName':
+        return book.seriesName?.toLowerCase() ?? null;
+      case 'seriesNumber':
+        return book.seriesNumber?.toLowerCase() ?? null;
       case 'format':
         return bookFormatLabel(book.format)?.toLowerCase() || null;
       case 'location':

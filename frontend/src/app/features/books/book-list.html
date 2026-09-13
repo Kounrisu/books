@@ -19,7 +19,7 @@
 <div class="filter-bar">
   <mat-form-field appearance="outline" class="search-field">
     <mat-label>Search</mat-label>
-    <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Title, author, description, review" />
+    <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Title, author, series, description, review" />
     <mat-icon matPrefix>search</mat-icon>
   </mat-form-field>
 
@@ -265,6 +265,32 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="seriesName">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('seriesName', $event)">
+        Series
+        @if (sortState('seriesName'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">{{ book.seriesName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="seriesNumber">
+      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('seriesNumber', $event)">
+        Issue / volume
+        @if (sortState('seriesNumber'); as state) {
+          @if (state.active) {
+            <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            @if (state.priority) { <span class="sort-priority">{{ state.priority }}</span> }
+          }
+        }
+      </th>
+      <td mat-cell *matCellDef="let book">{{ book.seriesNumber }}</td>
+    </ng-container>
+
     <ng-container matColumnDef="format">
       <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('format', $event)">
         Format
@@ -466,6 +492,12 @@
         </div>
 
         <div class="book-card-meta">
+          @if (displayedColumns().includes('seriesName') && book.seriesName) {
+            <span>{{ book.seriesName }}</span>
+          }
+          @if (displayedColumns().includes('seriesNumber') && book.seriesNumber) {
+            <span>#{{ book.seriesNumber }}</span>
+          }
           @if (displayedColumns().includes('format') && book.format) {
             <span>{{ bookFormatLabel(book.format) }}</span>
           }

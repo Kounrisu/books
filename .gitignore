@@ -2,3 +2,13 @@ node_modules/
 dist/
 .angular/
 .env
+
+# Output of a local, unrelated personal-photo-scanning tool that writes into
+# docs/ on this machine — never belongs in this repo's history (it's the
+# user's own photo library metadata, not app code or seed data).
+docs/images/
+docs/catalog.md
+docs/PROGRESS.md
+docs/books_catalog.json
+docs/scanned_history.json
+docs/scanner_state.json

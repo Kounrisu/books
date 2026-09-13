@@ -22,7 +22,11 @@ services:
     container_name: books-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Uses the container_name (unique cluster-wide), not the Compose
+      # service name "postgres" — several other apps on this VPS's shared
+      # `web` network also name their Postgres service "postgres", which
+      # collides as a network alias and can resolve to the wrong container.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@books-postgres:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
     volumes:

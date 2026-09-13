@@ -1,0 +1,18 @@
+<form (ngSubmit)="submit()">
+  <mat-form-field>
+    <mat-label>Name</mat-label>
+    <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" required />
+  </mat-form-field>
+
+  <input type="file" accept="image/*" (change)="onPhotoSelected($event)" />
+
+  <button mat-stroked-button type="button" (click)="captureLocation()">Capture current location</button>
+  @if (coordinates(); as coords) {
+    <p>Captured: {{ coords.lat }}, {{ coords.lng }}</p>
+  }
+  @if (geolocationError()) {
+    <p class="error">{{ geolocationError() }}</p>
+  }
+
+  <button mat-raised-button color="primary" type="submit">Save location</button>
+</form>

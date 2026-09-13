@@ -1,0 +1,18 @@
+<h1>Locations</h1>
+<a mat-raised-button color="primary" routerLink="/locations/new">Add location</a>
+
+<div class="location-grid">
+  @for (location of locationsService.locations(); track location.id) {
+    <mat-card>
+      @if (location.photoPath) {
+        <img mat-card-image [src]="apiBaseUrl + '/uploads/' + location.photoPath" [alt]="location.name" />
+      }
+      <mat-card-content>
+        <h3>{{ location.name }}</h3>
+        @if (location.latitude && location.longitude) {
+          <p>{{ location.latitude }}, {{ location.longitude }}</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

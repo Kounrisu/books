@@ -25,6 +25,9 @@
         @if (book.recommend) {
           <p>👍 Recommended</p>
         }
+        @if (book.locationId && locationName(book.locationId); as name) {
+          <p>📍 {{ name }}</p>
+        }
       </mat-card-content>
     </mat-card>
   }

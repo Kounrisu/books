@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { BooksService } from '../../core/books.service';
+import { LocationsService } from '../../core/locations.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -13,9 +14,18 @@ import { environment } from '../../../environments/environment';
 })
 export class BookListComponent implements OnInit {
   protected readonly booksService = inject(BooksService);
+  protected readonly locationsService = inject(LocationsService);
   protected readonly apiBaseUrl = environment.apiBaseUrl;
 
   ngOnInit(): void {
     void this.booksService.load();
+    void this.locationsService.load();
+  }
+
+  protected locationName(locationId: string | null): string | undefined {
+    if (!locationId) {
+      return undefined;
+    }
+    return this.locationsService.locations().find((location) => location.id === locationId)?.name;
   }
 }

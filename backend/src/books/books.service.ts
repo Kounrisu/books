@@ -12,8 +12,16 @@ import type {
 export class BooksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, input: CreateBookInput): Promise<BookRow> {
-    return this.prisma.book.create({ data: { userId, ...input } });
+  async create(userId: string, input: CreateBookInput): Promise<BookRow> {
+    if (input.locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { id: input.locationId, userId },
+      });
+      if (!location) {
+        throw new NotFoundException('Location not found');
+      }
+    }
+    return this.prisma.book.create({ data: { ...input, userId } });
   }
 
   async findAllForUser(userId: string): Promise<BookWithRanking[]> {
@@ -33,6 +41,14 @@ export class BooksService {
     id: string,
     input: UpdateBookInput,
   ): Promise<BookRow> {
+    if (input.locationId) {
+      const location = await this.prisma.location.findFirst({
+        where: { id: input.locationId, userId },
+      });
+      if (!location) {
+        throw new NotFoundException('Location not found');
+      }
+    }
     const result = await this.prisma.book.updateMany({
       where: { id, userId },
       data: input,

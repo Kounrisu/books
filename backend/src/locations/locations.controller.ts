@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -17,6 +18,17 @@ import { imageUploadOptions } from '../uploads/multer.config.js';
 import { LocationsService } from './locations.service.js';
 import type { LocationRow } from './locations.types.js';
 
+function parseCoordinate(value: string | undefined, field: string): number | undefined {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) {
+    throw new BadRequestException(`${field} must be a number`);
+  }
+  return parsed;
+}
+
 @Controller('locations')
 @UseGuards(JwtAuthGuard)
 export class LocationsController {
@@ -32,8 +44,8 @@ export class LocationsController {
     return this.locationsService.create(userId, {
       name: body.name,
       photoPath: photo?.filename,
-      latitude: body.latitude ? Number(body.latitude) : undefined,
-      longitude: body.longitude ? Number(body.longitude) : undefined,
+      latitude: parseCoordinate(body.latitude, 'latitude'),
+      longitude: parseCoordinate(body.longitude, 'longitude'),
     });
   }
 
@@ -53,8 +65,8 @@ export class LocationsController {
     return this.locationsService.update(userId, id, {
       name: body.name,
       photoPath: photo?.filename,
-      latitude: body.latitude ? Number(body.latitude) : undefined,
-      longitude: body.longitude ? Number(body.longitude) : undefined,
+      latitude: parseCoordinate(body.latitude, 'latitude'),
+      longitude: parseCoordinate(body.longitude, 'longitude'),
     });
   }
 

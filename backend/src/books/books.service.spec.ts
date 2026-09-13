@@ -5,7 +5,12 @@ import type { PrismaService } from '../prisma/prisma.service.js';
 function makePrismaMock(
   overrides: Partial<
     Record<
-      'create' | 'findMany' | 'updateMany' | 'findFirstOrThrow' | 'deleteMany',
+      | 'create'
+      | 'findMany'
+      | 'updateMany'
+      | 'findFirstOrThrow'
+      | 'deleteMany'
+      | 'locationFindFirst',
       unknown
     >
   > = {},
@@ -23,6 +28,15 @@ function makePrismaMock(
       deleteMany: vi
         .fn()
         .mockResolvedValue(overrides.deleteMany ?? { count: 1 }),
+    },
+    location: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          'locationFindFirst' in overrides
+            ? overrides.locationFindFirst
+            : { id: 'location-1', userId: 'user-1' },
+        ),
     },
   } as unknown as PrismaService;
 }
@@ -108,5 +122,39 @@ describe('BooksService', () => {
     await expect(
       service.delete('user-1', 'book-of-someone-else'),
     ).rejects.toThrow('Book not found');
+  });
+
+  it('rejects creating a book with a locationId that belongs to a different user', async () => {
+    const prisma = makePrismaMock({ locationFindFirst: null });
+    const service = new BooksService(prisma);
+
+    await expect(
+      service.create('user-1', {
+        title: 'Dune',
+        author: 'Herbert',
+        locationId: 'location-of-someone-else',
+      }),
+    ).rejects.toThrow('Location not found');
+
+    expect(prisma.location.findFirst).toHaveBeenCalledWith({
+      where: { id: 'location-of-someone-else', userId: 'user-1' },
+    });
+    expect(prisma.book.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects updating a book with a locationId that belongs to a different user', async () => {
+    const prisma = makePrismaMock({ locationFindFirst: null });
+    const service = new BooksService(prisma);
+
+    await expect(
+      service.update('user-1', 'book-1', {
+        locationId: 'location-of-someone-else',
+      }),
+    ).rejects.toThrow('Location not found');
+
+    expect(prisma.location.findFirst).toHaveBeenCalledWith({
+      where: { id: 'location-of-someone-else', userId: 'user-1' },
+    });
+    expect(prisma.book.updateMany).not.toHaveBeenCalled();
   });
 });

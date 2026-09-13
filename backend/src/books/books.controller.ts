@@ -31,7 +31,7 @@ interface BookFormBody {
   purchasePrice?: string;
 }
 
-function parseBookForm(body: BookFormBody, photo?: Express.Multer.File) {
+export function parseBookForm(body: BookFormBody, photo?: Express.Multer.File) {
   return {
     title: body.title,
     author: body.author,
@@ -44,8 +44,14 @@ function parseBookForm(body: BookFormBody, photo?: Express.Multer.File) {
       body.recommend === undefined ? undefined : body.recommend === 'true',
     coverImagePath: photo?.filename,
     locationId: body.locationId,
-    purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : undefined,
-    purchasePrice: body.purchasePrice ? Number(body.purchasePrice) : undefined,
+    purchaseDate:
+      body.purchaseDate !== undefined && body.purchaseDate !== ''
+        ? new Date(body.purchaseDate)
+        : undefined,
+    purchasePrice:
+      body.purchasePrice !== undefined && body.purchasePrice !== ''
+        ? Number(body.purchasePrice)
+        : undefined,
   };
 }
 

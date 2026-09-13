@@ -1,1 +1,8 @@
+@if (authService.isAuthenticated()) {
+  <nav>
+    <a routerLink="/books">Books</a>
+    <a routerLink="/locations">Locations</a>
+    <button type="button" (click)="logout()">Logout</button>
+  </nav>
+}
 <router-outlet />

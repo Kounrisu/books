@@ -1,0 +1,31 @@
+<h1>My Books</h1>
+<a mat-raised-button color="primary" routerLink="/books/new">Add book</a>
+
+<div class="book-grid">
+  @for (book of booksService.books(); track book.id) {
+    <mat-card>
+      @if (book.coverImagePath) {
+        <img mat-card-image [src]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
+      }
+      <mat-card-content>
+        <h3>{{ book.title }}</h3>
+        <p>{{ book.author }}</p>
+        @if (book.category) {
+          <mat-chip>{{ book.category }}</mat-chip>
+        }
+        @if (book.myNote !== null) {
+          <p>My note: {{ book.myNote }}/10</p>
+        }
+        @if (book.ranking; as ranking) {
+          <p>
+            🏆 Ranked #{{ ranking.categoryRank }} of {{ ranking.categoryTotal }} in {{ book.category }},
+            #{{ ranking.overallRank }} of {{ ranking.overallTotal }} overall
+          </p>
+        }
+        @if (book.recommend) {
+          <p>👍 Recommended</p>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

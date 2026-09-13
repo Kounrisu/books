@@ -65,7 +65,7 @@
       <mat-select [ngModel]="locationFilter()" (ngModelChange)="locationFilter.set($event)">
         <mat-option value="">All locations</mat-option>
         @for (location of locationsService.locations(); track location.id) {
-          <mat-option [value]="location.id">{{ location.name }}</mat-option>
+          <mat-option [value]="location.id">{{ locationsService.pathName(location.id) }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
@@ -314,7 +314,18 @@
           }
         }
       </th>
-      <td mat-cell *matCellDef="let book">{{ book.locationId ? locationsService.findById(book.locationId)?.name : '' }}</td>
+      <td mat-cell *matCellDef="let book">
+        <mat-select
+          class="inline-select"
+          [ngModel]="book.locationId ?? ''"
+          (ngModelChange)="updateLocation(book, $event)"
+        >
+          <mat-option value="">No location</mat-option>
+          @for (location of locationsService.locations(); track location.id) {
+            <mat-option [value]="location.id">{{ locationsService.pathName(location.id) }}</mat-option>
+          }
+        </mat-select>
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="status">
@@ -489,6 +500,18 @@
               }
             </mat-select>
           }
+          @if (displayedColumns().includes('location')) {
+            <mat-select
+              class="inline-select"
+              [ngModel]="book.locationId ?? ''"
+              (ngModelChange)="updateLocation(book, $event)"
+            >
+              <mat-option value="">No location</mat-option>
+              @for (location of locationsService.locations(); track location.id) {
+                <mat-option [value]="location.id">{{ locationsService.pathName(location.id) }}</mat-option>
+              }
+            </mat-select>
+          }
         </div>
 
         <div class="book-card-meta">
@@ -500,9 +523,6 @@
           }
           @if (displayedColumns().includes('format') && book.format) {
             <span>{{ bookFormatLabel(book.format) }}</span>
-          }
-          @if (displayedColumns().includes('location') && book.locationId) {
-            <span>📍 {{ locationsService.findById(book.locationId)?.name }}</span>
           }
           @if (displayedColumns().includes('createdAt')) {
             <span>{{ book.createdAt | date: 'mediumDate' }}</span>

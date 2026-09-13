@@ -6,6 +6,7 @@ export interface LocationRow {
   latitude: number | null;
   longitude: number | null;
   createdAt: Date;
+  parentLocationId: string | null;
 }
 
 export interface CreateLocationInput {
@@ -13,6 +14,7 @@ export interface CreateLocationInput {
   photoPath?: string;
   latitude?: number;
   longitude?: number;
+  parentLocationId?: string | null;
 }
 
 export interface UpdateLocationInput {
@@ -20,4 +22,5 @@ export interface UpdateLocationInput {
   photoPath?: string;
   latitude?: number;
   longitude?: number;
+  parentLocationId?: string | null;
 }

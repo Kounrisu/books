@@ -38,7 +38,7 @@ export class LocationsController {
   @UseInterceptors(FileInterceptor('photo', imageUploadOptions))
   create(
     @CurrentUser() userId: string,
-    @Body() body: { name: string; latitude?: string; longitude?: string },
+    @Body() body: { name: string; latitude?: string; longitude?: string; parentLocationId?: string },
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<LocationRow> {
     return this.locationsService.create(userId, {
@@ -46,6 +46,7 @@ export class LocationsController {
       photoPath: photo?.filename,
       latitude: parseCoordinate(body.latitude, 'latitude'),
       longitude: parseCoordinate(body.longitude, 'longitude'),
+      parentLocationId: body.parentLocationId || null,
     });
   }
 
@@ -59,7 +60,7 @@ export class LocationsController {
   update(
     @CurrentUser() userId: string,
     @Param('id') id: string,
-    @Body() body: { name?: string; latitude?: string; longitude?: string },
+    @Body() body: { name?: string; latitude?: string; longitude?: string; parentLocationId?: string },
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<LocationRow> {
     return this.locationsService.update(userId, id, {
@@ -67,6 +68,7 @@ export class LocationsController {
       photoPath: photo?.filename,
       latitude: parseCoordinate(body.latitude, 'latitude'),
       longitude: parseCoordinate(body.longitude, 'longitude'),
+      parentLocationId: body.parentLocationId !== undefined ? body.parentLocationId || null : undefined,
     });
   }
 

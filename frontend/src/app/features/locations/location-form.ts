@@ -1,27 +1,29 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { LocationsService } from '../../core/locations.service';
+import { LocationRow, LocationsService } from '../../core/locations.service';
 
 @Component({
   selector: 'app-location-form',
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule, MatIconModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatCardModule, MatIconModule],
   templateUrl: './location-form.html',
   styleUrl: './location-form.scss',
 })
 export class LocationFormComponent implements OnInit {
-  private readonly locationsService = inject(LocationsService);
+  protected readonly locationsService = inject(LocationsService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly locationId = signal<string | null>(null);
 
   readonly name = signal('');
+  readonly parentLocationId = signal<string>('');
   readonly photoFile = signal<File | null>(null);
   readonly existingPhotoPath = signal<string | null>(null);
   readonly coordinates = signal<{ lat: number; lng: number } | null>(null);
@@ -29,21 +31,44 @@ export class LocationFormComponent implements OnInit {
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
 
+  /** Candidate parents: every other location except this one and its own descendants (avoids a cycle). */
+  protected readonly parentOptions = computed<LocationRow[]>(() => {
+    const id = this.locationId();
+    const all = this.locationsService.locations();
+    if (!id) {
+      return all;
+    }
+    const excluded = new Set<string>([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const location of all) {
+        if (location.parentLocationId && excluded.has(location.parentLocationId) && !excluded.has(location.id)) {
+          excluded.add(location.id);
+          changed = true;
+        }
+      }
+    }
+    return all.filter((location) => !excluded.has(location.id));
+  });
+
   async ngOnInit(): Promise<void> {
+    if (this.locationsService.locations().length === 0) {
+      await this.locationsService.load();
+    }
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       return;
     }
     this.locationId.set(id);
 
-    if (this.locationsService.locations().length === 0) {
-      await this.locationsService.load();
-    }
     const location = this.locationsService.findById(id);
     if (!location) {
       this.error.set('This location could not be found.');
       return;
     }
+    this.parentLocationId.set(location.parentLocationId ?? '');
     this.name.set(location.name);
     this.existingPhotoPath.set(location.photoPath);
     if (location.latitude !== null && location.longitude !== null) {
@@ -82,6 +107,7 @@ export class LocationFormComponent implements OnInit {
     try {
       const formData = new FormData();
       formData.append('name', this.name());
+      formData.append('parentLocationId', this.parentLocationId());
       const photo = this.photoFile();
       if (photo) {
         formData.append('photo', photo);

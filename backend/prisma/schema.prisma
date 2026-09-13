@@ -28,15 +28,21 @@ model User {
 }
 
 model Location {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  photoPath String?  @map("photo_path")
-  latitude  Float?
-  longitude Float?
-  createdAt DateTime @default(now()) @map("created_at")
-  books     Book[]
+  id               String     @id @default(cuid())
+  userId           String     @map("user_id")
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  photoPath        String?    @map("photo_path")
+  latitude         Float?
+  longitude        Float?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  // A location can nest under another (e.g. a "Cardbox #3" location inside
+  // a "Garage" location inside "Home"), so a shelf or box can be tracked as
+  // its own place rather than free text on the parent.
+  parentLocationId String?    @map("parent_location_id")
+  parentLocation   Location?  @relation("LocationHierarchy", fields: [parentLocationId], references: [id], onDelete: SetNull)
+  subLocations     Location[] @relation("LocationHierarchy")
+  books            Book[]
 
   @@map("locations")
 }

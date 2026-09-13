@@ -54,6 +54,7 @@ describe('LocationsController', () => {
       photoPath: undefined,
       latitude: 1.5,
       longitude: -2.5,
+      parentLocationId: null,
     });
   });
 
@@ -68,6 +69,7 @@ describe('LocationsController', () => {
       photoPath: undefined,
       latitude: undefined,
       longitude: undefined,
+      parentLocationId: null,
     });
   });
 });

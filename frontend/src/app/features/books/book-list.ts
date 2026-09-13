@@ -339,6 +339,24 @@ export class BookListComponent implements OnInit {
     }
   }
 
+  async updateLocation(book: BookRow, value: string): Promise<void> {
+    const nextLocationId = value || null;
+    if (nextLocationId === book.locationId) {
+      return;
+    }
+    const previous = book.locationId;
+    this.booksService.books.update((list) =>
+      list.map((b) => (b.id === book.id ? { ...b, locationId: nextLocationId } : b)),
+    );
+    try {
+      await this.booksService.patchFields(book.id, { locationId: value });
+    } catch {
+      this.booksService.books.update((list) =>
+        list.map((b) => (b.id === book.id ? { ...b, locationId: previous } : b)),
+      );
+    }
+  }
+
   async updateItemType(book: BookRow, value: ItemType): Promise<void> {
     if (value === book.itemType) {
       return;

@@ -23,6 +23,9 @@
         }
         <mat-card-content>
           <h3>{{ location.name }}</h3>
+          @if (location.parentLocationId) {
+            <p class="parent-path">in {{ locationsService.pathName(location.parentLocationId) }}</p>
+          }
           @if (location.latitude && location.longitude) {
             <p class="coords">📍 {{ location.latitude }}, {{ location.longitude }}</p>
           }

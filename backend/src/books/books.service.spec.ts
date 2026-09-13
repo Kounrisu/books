@@ -160,4 +160,20 @@ describe('BooksService', () => {
     });
     expect(prisma.book.updateMany).not.toHaveBeenCalled();
   });
+
+  it('clears a book\'s location by converting an empty locationId to null', async () => {
+    const prisma = makePrismaMock({
+      updateMany: { count: 1 },
+      findFirstOrThrow: { id: 'book-1', userId: 'user-1', locationId: null },
+    });
+    const service = new BooksService(prisma);
+
+    await service.update('user-1', 'book-1', { locationId: '' });
+
+    expect(prisma.book.updateMany).toHaveBeenCalledWith({
+      where: { id: 'book-1', userId: 'user-1' },
+      data: expect.objectContaining({ locationId: null }),
+    });
+    expect(prisma.location.findFirst).not.toHaveBeenCalled();
+  });
 });

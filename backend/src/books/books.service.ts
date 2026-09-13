@@ -111,7 +111,10 @@ export class BooksService {
     }
     const result = await this.prisma.book.updateMany({
       where: { id, userId },
-      data: input,
+      // An empty string means "clear the location" — locationId has a DB
+      // foreign key, so it must become null rather than '' (which would
+      // violate the constraint since '' is never a real location id).
+      data: { ...input, locationId: input.locationId === '' ? null : input.locationId },
     });
     if (result.count === 0) {
       throw new NotFoundException('Book not found');

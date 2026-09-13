@@ -6,7 +6,17 @@
     <form (ngSubmit)="submit()" class="stacked-form">
       <mat-form-field appearance="outline">
         <mat-label>Name</mat-label>
-        <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" required />
+        <input matInput [ngModel]="name()" (ngModelChange)="name.set($event)" name="name" required placeholder="e.g. Home, Garage, Cardbox #3" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Inside (optional)</mat-label>
+        <mat-select [ngModel]="parentLocationId()" (ngModelChange)="parentLocationId.set($event)" name="parentLocationId">
+          <mat-option value="">Top-level (no parent)</mat-option>
+          @for (option of parentOptions(); track option.id) {
+            <mat-option [value]="option.id">{{ locationsService.pathName(option.id) }}</mat-option>
+          }
+        </mat-select>
       </mat-form-field>
 
       <div class="file-upload">

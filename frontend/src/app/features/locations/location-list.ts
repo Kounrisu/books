@@ -27,7 +27,7 @@ export class LocationListComponent implements OnInit {
   async deleteLocation(location: LocationRow): Promise<void> {
     const confirmed = await this.confirmDialog.confirm({
       title: 'Delete location',
-      message: `Delete "${location.name}"? Books assigned to it will keep their other details but lose this location.`,
+      message: `Delete "${location.name}"? Books assigned to it will keep their other details but lose this location, and any sub-locations inside it will move to the top level.`,
       confirmLabel: 'Delete',
       danger: true,
     });

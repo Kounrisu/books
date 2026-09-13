@@ -9,6 +9,7 @@ export interface LocationRow {
   photoPath: string | null;
   latitude: number | null;
   longitude: number | null;
+  parentLocationId: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,5 +51,21 @@ export class LocationsService {
 
   findById(id: string): LocationRow | undefined {
     return this.locations().find((location) => location.id === id);
+  }
+
+  /** Full "Home / Garage / Cardbox #3" style path, walking up parents. */
+  pathName(id: string | null | undefined): string {
+    if (!id) {
+      return '';
+    }
+    const segments: string[] = [];
+    let current = this.findById(id);
+    const seen = new Set<string>();
+    while (current && !seen.has(current.id)) {
+      segments.unshift(current.name);
+      seen.add(current.id);
+      current = current.parentLocationId ? this.findById(current.parentLocationId) : undefined;
+    }
+    return segments.join(' / ');
   }
 }

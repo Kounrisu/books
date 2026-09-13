@@ -5,11 +5,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../core/auth.service';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule, MatIconModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -21,10 +22,24 @@ export class LoginComponent {
   readonly password = signal('');
   readonly error = signal<string | null>(null);
   readonly mode = signal<'login' | 'register'>('login');
+  readonly demoLoading = signal(false);
 
   toggleMode(): void {
     this.error.set(null);
     this.mode.set(this.mode() === 'login' ? 'register' : 'login');
+  }
+
+  async tryDemo(): Promise<void> {
+    this.error.set(null);
+    this.demoLoading.set(true);
+    try {
+      await this.auth.loginAsDemo();
+      this.router.navigateByUrl('/books');
+    } catch {
+      this.error.set('Could not start the demo right now. Please try again.');
+    } finally {
+      this.demoLoading.set(false);
+    }
   }
 
   async submit(): Promise<void> {

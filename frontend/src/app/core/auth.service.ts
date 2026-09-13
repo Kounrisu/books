@@ -12,6 +12,7 @@ export interface CurrentUserProfile {
   email: string;
   role: string;
   isActive: boolean;
+  isDemo: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,6 +25,7 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this.tokenSignal() !== null);
   readonly profile = this.profileSignal.asReadonly();
   readonly isAdmin = computed(() => this.profileSignal()?.role === 'admin');
+  readonly isDemo = computed(() => this.profileSignal()?.isDemo === true);
 
   token(): string | null {
     return this.tokenSignal();
@@ -37,6 +39,12 @@ export class AuthService {
 
   async register(email: string, password: string): Promise<void> {
     const result = await firstValueFrom(this.http.post<AuthResult>(`${this.baseUrl}/register`, { email, password }));
+    this.setToken(result.accessToken);
+    await this.loadProfile();
+  }
+
+  async loginAsDemo(): Promise<void> {
+    const result = await firstValueFrom(this.http.post<AuthResult>(`${this.baseUrl}/demo`, {}));
     this.setToken(result.accessToken);
     await this.loadProfile();
   }

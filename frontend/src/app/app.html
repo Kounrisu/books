@@ -72,6 +72,12 @@
       </button>
     </mat-menu>
   </mat-toolbar>
+  @if (authService.isDemo()) {
+    <div class="demo-banner">
+      <mat-icon>info</mat-icon>
+      <span>You're in the demo library — shared with other visitors and reset automatically. Don't add anything private.</span>
+    </div>
+  }
 }
 <main class="app-content">
   <router-outlet />

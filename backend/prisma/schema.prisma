@@ -14,6 +14,7 @@ model User {
   passwordHash        String               @map("password_hash")
   role                String               @default("user")
   isActive            Boolean              @default(true) @map("is_active")
+  isDemo              Boolean              @default(false) @map("is_demo")
   createdAt           DateTime             @default(now()) @map("created_at")
   locations           Location[]
   books               Book[]

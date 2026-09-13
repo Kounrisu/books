@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -7,6 +7,7 @@ import AdmZip = require('adm-zip');
 import sharp = require('sharp');
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UPLOADS_DIR } from '../uploads/multer.config.js';
+import { DEMO_MAX_BOOKS } from '../demo/demo.constants.js';
 import { computeRankings } from './ranking.js';
 import type {
   BookRow,
@@ -57,7 +58,21 @@ const EXPORT_COLUMNS = [
 export class BooksService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async assertDemoCapacity(userId: string, additionalBooks = 1): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } });
+    if (!user?.isDemo) {
+      return;
+    }
+    const count = await this.prisma.book.count({ where: { userId } });
+    if (count + additionalBooks > DEMO_MAX_BOOKS) {
+      throw new BadRequestException(
+        `The demo library is capped at ${DEMO_MAX_BOOKS} books — it resets automatically on a schedule.`,
+      );
+    }
+  }
+
   async create(userId: string, input: CreateBookInput): Promise<BookRow> {
+    await this.assertDemoCapacity(userId);
     if (input.locationId) {
       const location = await this.prisma.location.findFirst({
         where: { id: input.locationId, userId },
@@ -116,6 +131,7 @@ export class BooksService {
     photos: Express.Multer.File[],
     defaults: BulkImportDefaults,
   ): Promise<BulkImportResult> {
+    await this.assertDemoCapacity(userId, photos.length);
     if (defaults.locationId) {
       const location = await this.prisma.location.findFirst({
         where: { id: defaults.locationId, userId },

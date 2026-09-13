@@ -19,6 +19,11 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
+  @Post('demo')
+  demo(): Promise<AuthResult> {
+    return this.authService.demoLogin();
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() userId: string): Promise<CurrentUserProfile> {

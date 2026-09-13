@@ -14,3 +14,26 @@
   flex-direction: column;
   gap: 0.75rem;
 }
+
+.demo-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+}
+
+.demo-button {
+  width: 100%;
+  justify-content: center;
+}
+

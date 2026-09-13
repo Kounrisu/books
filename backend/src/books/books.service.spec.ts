@@ -38,6 +38,9 @@ function makePrismaMock(
             : { id: 'location-1', userId: 'user-1' },
         ),
     },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({ isDemo: false }),
+    },
   } as unknown as PrismaService;
 }
 

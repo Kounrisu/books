@@ -8,6 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { DemoResetService } from '../demo/demo-reset.service.js';
 import type { AuthResult, CurrentUserProfile } from './auth.types.js';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class AuthService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly demoResetService: DemoResetService,
     @Inject('JWT_SECRET') secret: string,
   ) {
     this.jwt = new JwtService({ secret, signOptions: { expiresIn: '30d' } });
@@ -51,6 +53,17 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return { id: user.id, email: user.email, role: user.role, isActive: user.isActive };
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isDemo: user.isDemo,
+    };
+  }
+
+  async demoLogin(): Promise<AuthResult> {
+    const user = await this.demoResetService.getOrCreateDemoUser();
+    return { accessToken: this.jwt.sign({ sub: user.id }) };
   }
 }

@@ -17,7 +17,7 @@ describe('AuthService', () => {
       findUnique: null,
       create: { id: 'user-1', email: 'a@b.com', passwordHash: 'hashed', createdAt: new Date() },
     });
-    const service = new AuthService(prisma, 'test-secret');
+    const service = new AuthService(prisma, {} as any, 'test-secret');
 
     const result = await service.register('a@b.com', 'password123');
 
@@ -29,7 +29,7 @@ describe('AuthService', () => {
 
   it('rejects registration when the email is already taken', async () => {
     const prisma = makePrismaMock({ findUnique: { id: 'user-1', email: 'a@b.com' } });
-    const service = new AuthService(prisma, 'test-secret');
+    const service = new AuthService(prisma, {} as any, 'test-secret');
 
     await expect(service.register('a@b.com', 'password123')).rejects.toThrow('Email already registered');
   });
@@ -40,7 +40,7 @@ describe('AuthService', () => {
     const prisma = makePrismaMock({
       findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: true },
     });
-    const service = new AuthService(prisma, 'test-secret');
+    const service = new AuthService(prisma, {} as any, 'test-secret');
 
     const result = await service.login('a@b.com', 'password123');
 
@@ -53,7 +53,7 @@ describe('AuthService', () => {
     const prisma = makePrismaMock({
       findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: true },
     });
-    const service = new AuthService(prisma, 'test-secret');
+    const service = new AuthService(prisma, {} as any, 'test-secret');
 
     await expect(service.login('a@b.com', 'wrong')).rejects.toThrow('Invalid credentials');
   });
@@ -64,7 +64,7 @@ describe('AuthService', () => {
     const prisma = makePrismaMock({
       findUnique: { id: 'user-1', email: 'a@b.com', passwordHash, isActive: false },
     });
-    const service = new AuthService(prisma, 'test-secret');
+    const service = new AuthService(prisma, {} as any, 'test-secret');
 
     await expect(service.login('a@b.com', 'password123')).rejects.toThrow(
       'This account has been disabled',

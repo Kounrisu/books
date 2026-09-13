@@ -27,4 +27,5 @@ export interface CurrentUserProfile {
   email: string;
   role: string;
   isActive: boolean;
+  isDemo: boolean;
 }

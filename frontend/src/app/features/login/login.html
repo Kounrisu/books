@@ -25,5 +25,14 @@
         {{ mode() === 'register' ? 'Already have an account? Log in' : 'Need an account? Register' }}
       </button>
     </mat-card-actions>
+    <div class="demo-divider">
+      <span>or</span>
+    </div>
+    <mat-card-actions>
+      <button mat-stroked-button type="button" class="demo-button" [disabled]="demoLoading()" (click)="tryDemo()">
+        <mat-icon>play_circle</mat-icon>
+        {{ demoLoading() ? 'Starting demo…' : 'Try the demo (no account needed)' }}
+      </button>
+    </mat-card-actions>
   </mat-card>
 </div>

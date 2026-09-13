@@ -769,3 +769,65 @@ high-value fields complete with the rest schema-only. Phase 5 has its core
   (via a direct API call with a synthetic image, since the browser tool
   can't easily drive a native file picker), JSON export (verified response
   shape), and JSON import (including the security-fix verification above).
+
+## 2026-09-13 - Claude Code
+
+### User Input
+
+Following the production deployment and the new `itemType` field, the user
+asked (via an earlier `AskUserQuestion`) for a public "Try the demo" mode —
+a full read-write sandbox so an anonymous visitor can add/edit/delete books
+like a real user, without registering, and confirmed with "go" to proceed.
+
+### Interpretation
+
+A single shared demo account (`isDemo: true` on `User`), a public
+`POST /auth/demo` endpoint that finds-or-creates it and issues a normal JWT
+(no password), a small anti-abuse cap on book creation, and a periodic
+wipe-and-reseed so the shared account never accumulates junk or gets left
+empty. No new dependency (`@nestjs/schedule`) — a plain `OnModuleInit` +
+`setInterval` was enough for one job.
+
+### Action Taken
+
+- Implemented: `User.isDemo` field + migration; `POST /auth/demo`;
+  `isDemo` on `CurrentUserProfile`/`/auth/me`; `DemoResetService` (wipes and
+  reseeds the demo user's books/locations on startup and hourly, 10 books
+  spanning book/magazine/manga/bd/manhwa); a 200-book cap on demo-account
+  creation (single-book and bulk-photo-import paths); "Try the demo" button
+  on the login page; a persistent demo-mode banner in the app shell.
+- Deferred: nothing — this was the full scope of the earlier decision.
+
+### Files / Areas Touched
+
+Backend: `backend/prisma/schema.prisma` + migration
+`20260913160923_add_is_demo_user`; `backend/src/demo/*` (new module:
+`demo.constants.ts`, `demo-seed-data.ts`, `demo-reset.service.ts`,
+`demo.module.ts`); `backend/src/auth/{auth.service,auth.controller,
+auth.types,auth.module,auth.service.spec}.ts`; `backend/src/books/
+{books.service,books.service.spec}.ts` (demo cap).
+
+Frontend: `frontend/src/app/core/auth.service.ts`; `frontend/src/app/
+features/login/{login.ts,login.html,login.scss}`; `frontend/src/app/
+{app.html,app.scss}` (demo banner).
+
+### Roadmap / Spec Impact
+
+Not part of the original phased roadmap — a standalone product decision
+made mid-session, scoped and built independently of Phase 8 (premium
+UX/UI), which still hasn't started.
+
+### Open Questions / Follow-Up
+
+- The demo reset interval (60 min) and cap (200 books) are reasonable
+  defaults, not requested exact numbers — revisit if real usage shows they
+  need tuning.
+- No rate-limiting on `POST /auth/demo` itself (anyone can call it
+  repeatedly); acceptable for now since it only ever returns the same
+  shared account, never creates new rows per call.
+- Verification: backend `tsc --noEmit` and `vitest run` (39/39) clean;
+  frontend `tsc --noEmit` and `ng test` (11/11) clean; `nest build` clean;
+  Docker rebuilt (backend + frontend) and the full flow manually verified
+  live — `/auth/demo` issues a token, `/auth/me` reports `isDemo: true`,
+  and the books page renders all 10 seeded demo books with correct types/
+  categories/statuses.

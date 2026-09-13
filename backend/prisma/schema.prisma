@@ -48,6 +48,11 @@ model Book {
   author         String
   category       String?
   subcategory    String?
+  // What kind of item this is (book/magazine/manga/bande dessinée/manhwa).
+  // Magazines and manga don't always have a "title" the way a book does —
+  // for those, `seriesName` + `seriesNumber` (already below) hold the
+  // series/magazine name and the issue date or volume number.
+  itemType       String    @default("book") @map("item_type")
   language       String?
   description    String?
   myReview       String?   @map("my_review")

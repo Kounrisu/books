@@ -16,6 +16,15 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select [ngModel]="itemType()" (ngModelChange)="itemType.set($event)" name="itemType">
+          @for (option of itemTypeOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Category</mat-label>
         <input
           matInput
@@ -189,13 +198,25 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Series name</mat-label>
-        <input matInput [ngModel]="seriesName()" (ngModelChange)="seriesName.set($event)" name="seriesName" />
+        <mat-label>Series / magazine name</mat-label>
+        <input
+          matInput
+          [ngModel]="seriesName()"
+          (ngModelChange)="seriesName.set($event)"
+          name="seriesName"
+          placeholder="e.g. One Piece, National Geographic"
+        />
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Series number</mat-label>
-        <input matInput [ngModel]="seriesNumber()" (ngModelChange)="seriesNumber.set($event)" name="seriesNumber" />
+        <mat-label>Volume / issue</mat-label>
+        <input
+          matInput
+          [ngModel]="seriesNumber()"
+          (ngModelChange)="seriesNumber.set($event)"
+          name="seriesNumber"
+          placeholder="e.g. 105, or March 2024 for a magazine issue"
+        />
       </mat-form-field>
 
       <mat-form-field appearance="outline">

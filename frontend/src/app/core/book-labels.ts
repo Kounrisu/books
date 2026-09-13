@@ -1,4 +1,4 @@
-import { LibraryStatus, MetadataStatus, OwnershipFormat, PhysicalStatus, ReadingStatus } from './books.service';
+import { ItemType, LibraryStatus, MetadataStatus, OwnershipFormat, PhysicalStatus, ReadingStatus } from './books.service';
 
 export const OWNERSHIP_FORMAT_OPTIONS: { value: OwnershipFormat; label: string }[] = [
   { value: 'physical', label: 'Physical' },
@@ -53,6 +53,19 @@ export const BOOK_FORMAT_OPTIONS: { value: string; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+// Magazines and manga don't always have a real "title" the way a book
+// does — for those, `seriesName` + `seriesNumber` hold the magazine/series
+// name and the issue date or volume number (e.g. seriesName "National
+// Geographic", seriesNumber "March 2024"; or seriesName "One Piece",
+// seriesNumber "105").
+export const ITEM_TYPE_OPTIONS: { value: ItemType; label: string }[] = [
+  { value: 'book', label: 'Book' },
+  { value: 'magazine', label: 'Magazine' },
+  { value: 'manga', label: 'Manga' },
+  { value: 'bd', label: 'Bande dessinée' },
+  { value: 'manhwa', label: 'Manhwa' },
+];
+
 function labelFor<T extends string>(options: { value: T; label: string }[], value: T): string {
   return options.find((option) => option.value === value)?.label ?? value;
 }
@@ -80,4 +93,8 @@ export function metadataStatusLabel(value: string): string {
 export function bookFormatLabel(value: string | null): string {
   if (!value) return '';
   return BOOK_FORMAT_OPTIONS.find((option) => option.value === value)?.label ?? value;
+}
+
+export function itemTypeLabel(value: string): string {
+  return labelFor(ITEM_TYPE_OPTIONS, value as ItemType);
 }

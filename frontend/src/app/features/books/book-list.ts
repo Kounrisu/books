@@ -11,9 +11,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { BookRow, BooksService, LibraryStatus, ReadingStatus } from '../../core/books.service';
+import { BookRow, BooksService, ItemType, LibraryStatus, ReadingStatus } from '../../core/books.service';
 import { LocationsService } from '../../core/locations.service';
-import { LIBRARY_STATUS_OPTIONS, READING_STATUS_OPTIONS, bookFormatLabel, libraryStatusLabel, readingStatusLabel } from '../../core/book-labels';
+import {
+  ITEM_TYPE_OPTIONS,
+  LIBRARY_STATUS_OPTIONS,
+  READING_STATUS_OPTIONS,
+  bookFormatLabel,
+  itemTypeLabel,
+  libraryStatusLabel,
+  readingStatusLabel,
+} from '../../core/book-labels';
 import { ALWAYS_VISIBLE_COLUMNS, BOOK_COLUMN_ORDER } from '../../core/book-list-settings';
 import { SettingsService } from '../../core/settings.service';
 import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
@@ -22,6 +30,7 @@ import { environment } from '../../../environments/environment';
 export type SortField =
   | 'title'
   | 'author'
+  | 'itemType'
   | 'category'
   | 'subcategory'
   | 'format'
@@ -43,6 +52,7 @@ const DEFAULT_SORT: SortCriterion[] = [{ field: 'createdAt', direction: 'desc' }
 const SORTABLE_FIELDS: SortField[] = [
   'title',
   'author',
+  'itemType',
   'category',
   'subcategory',
   'format',
@@ -86,7 +96,9 @@ export class BookListComponent implements OnInit {
     return BOOK_COLUMN_ORDER.filter((key) => visible.has(key));
   });
   protected readonly bookFormatLabel = bookFormatLabel;
+  protected readonly itemTypeLabel = itemTypeLabel;
   protected readonly sortableFields = SORTABLE_FIELDS;
+  protected readonly itemTypeOptions = ITEM_TYPE_OPTIONS;
   protected readonly libraryStatusOptions = LIBRARY_STATUS_OPTIONS;
   protected readonly readingStatusOptions = READING_STATUS_OPTIONS;
   protected readonly libraryStatusLabel = libraryStatusLabel;
@@ -98,6 +110,7 @@ export class BookListComponent implements OnInit {
   readonly subcategoryEditValue = signal('');
 
   readonly search = signal('');
+  readonly itemTypeFilter = signal('');
   readonly categoryFilter = signal('');
   readonly subcategoryFilter = signal('');
   readonly locationFilter = signal('');
@@ -126,6 +139,7 @@ export class BookListComponent implements OnInit {
 
   protected readonly filteredBooks = computed(() => {
     const query = this.search().trim().toLowerCase();
+    const itemType = this.itemTypeFilter();
     const category = this.categoryFilter();
     const subcategory = this.subcategoryFilter();
     const locationId = this.locationFilter();
@@ -133,6 +147,9 @@ export class BookListComponent implements OnInit {
     const readingStatuses = this.readingStatusFilter();
 
     const filtered = this.booksService.books().filter((book) => {
+      if (itemType && book.itemType !== itemType) {
+        return false;
+      }
       if (category && book.category !== category) {
         return false;
       }
@@ -172,6 +189,7 @@ export class BookListComponent implements OnInit {
   protected hasActiveFilters(): boolean {
     return !!(
       this.search() ||
+      this.itemTypeFilter() ||
       this.categoryFilter() ||
       this.subcategoryFilter() ||
       this.locationFilter() ||
@@ -182,6 +200,7 @@ export class BookListComponent implements OnInit {
 
   protected clearFilters(): void {
     this.search.set('');
+    this.itemTypeFilter.set('');
     this.categoryFilter.set('');
     this.subcategoryFilter.set('');
     this.locationFilter.set('');
@@ -316,6 +335,23 @@ export class BookListComponent implements OnInit {
     }
   }
 
+  async updateItemType(book: BookRow, value: ItemType): Promise<void> {
+    if (value === book.itemType) {
+      return;
+    }
+    const previous = book.itemType;
+    this.booksService.books.update((list) =>
+      list.map((b) => (b.id === book.id ? { ...b, itemType: value } : b)),
+    );
+    try {
+      await this.booksService.patchFields(book.id, { itemType: value });
+    } catch {
+      this.booksService.books.update((list) =>
+        list.map((b) => (b.id === book.id ? { ...b, itemType: previous } : b)),
+      );
+    }
+  }
+
   async updateLibraryStatus(book: BookRow, value: LibraryStatus): Promise<void> {
     if (value === book.libraryStatus) {
       return;
@@ -379,6 +415,8 @@ export class BookListComponent implements OnInit {
         return book.title?.toLowerCase() ?? null;
       case 'author':
         return book.author?.toLowerCase() ?? null;
+      case 'itemType':
+        return itemTypeLabel(book.itemType)?.toLowerCase() ?? null;
       case 'category':
         return book.category?.toLowerCase() ?? null;
       case 'subcategory':

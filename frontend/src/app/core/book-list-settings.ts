@@ -13,6 +13,7 @@ export interface BookColumnConfig {
 
 export const CONFIGURABLE_COLUMNS: BookColumnConfig[] = [
   { key: 'cover', label: 'Cover' },
+  { key: 'itemType', label: 'Type', filterKey: 'itemType' },
   { key: 'category', label: 'Category', filterKey: 'category' },
   { key: 'subcategory', label: 'Subgenre', filterKey: 'subcategory' },
   { key: 'format', label: 'Format' },
@@ -29,6 +30,7 @@ export const BOOK_COLUMN_ORDER = [
   'cover',
   'title',
   'author',
+  'itemType',
   'category',
   'subcategory',
   'format',
@@ -46,6 +48,7 @@ export interface BookFilterConfig {
 }
 
 export const CONFIGURABLE_FILTERS: BookFilterConfig[] = [
+  { key: 'itemType', label: 'Type' },
   { key: 'category', label: 'Category' },
   { key: 'subcategory', label: 'Subgenre' },
   { key: 'location', label: 'Location' },

@@ -8,6 +8,7 @@ export type PhysicalStatus = 'in_collection' | 'unknown_location' | 'lost' | 'le
 export type LibraryStatus = 'owned' | 'wishlist' | 'want_to_read' | 'want_to_buy' | 'borrowed';
 export type ReadingStatus = 'unread' | 'reading' | 'read' | 'abandoned' | 'reference_only';
 export type MetadataStatus = 'complete' | 'needs_metadata' | 'needs_review';
+export type ItemType = 'book' | 'magazine' | 'manga' | 'bd' | 'manhwa';
 
 export interface BookRow {
   id: string;
@@ -15,6 +16,7 @@ export interface BookRow {
   author: string;
   category: string | null;
   subcategory: string | null;
+  itemType: ItemType;
   language: string | null;
   description: string | null;
   myReview: string | null;

@@ -12,6 +12,7 @@ import {
   Min,
 } from 'class-validator';
 import type {
+  ItemType,
   LibraryStatus,
   MetadataStatus,
   OwnershipFormat,
@@ -42,6 +43,7 @@ export const READING_STATUSES: ReadingStatus[] = [
   'reference_only',
 ];
 export const METADATA_STATUSES: MetadataStatus[] = ['complete', 'needs_metadata', 'needs_review'];
+export const ITEM_TYPES: ItemType[] = ['book', 'magazine', 'manga', 'bd', 'manhwa'];
 
 export class CreateBookDto {
   @IsString()
@@ -54,6 +56,7 @@ export class CreateBookDto {
 
   @IsOptional() @IsString() @MaxLength(120) category?: string;
   @IsOptional() @IsString() @MaxLength(120) subcategory?: string;
+  @IsOptional() @IsIn(ITEM_TYPES) itemType?: ItemType;
   @IsOptional() @IsString() @MaxLength(60) language?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() myReview?: string;

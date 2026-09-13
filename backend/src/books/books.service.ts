@@ -34,6 +34,7 @@ const EXPORT_COLUMNS = [
   'author',
   'category',
   'subcategory',
+  'itemType',
   'language',
   'description',
   'isbn10',
@@ -374,6 +375,7 @@ export class BooksService {
     if (row.tags !== undefined) fields.tags = row.tags;
     if (row.condition !== undefined) fields.condition = row.condition;
     if (row.format !== undefined) fields.format = row.format;
+    if (row.itemType !== undefined) fields.itemType = row.itemType;
     if (row.metadataStatus !== undefined) fields.metadataStatus = row.metadataStatus;
     return fields;
   }

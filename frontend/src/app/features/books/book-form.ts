@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import {
   BooksService,
+  ItemType,
   LibraryStatus,
   MetadataStatus,
   OwnershipFormat,
@@ -20,6 +21,7 @@ import {
 import { LocationsService } from '../../core/locations.service';
 import {
   BOOK_FORMAT_OPTIONS,
+  ITEM_TYPE_OPTIONS,
   LIBRARY_STATUS_OPTIONS,
   METADATA_STATUS_OPTIONS,
   OWNERSHIP_FORMAT_OPTIONS,
@@ -59,11 +61,13 @@ export class BookFormComponent implements OnInit {
   protected readonly readingStatusOptions = READING_STATUS_OPTIONS;
   protected readonly metadataStatusOptions = METADATA_STATUS_OPTIONS;
   protected readonly bookFormatOptions = BOOK_FORMAT_OPTIONS;
+  protected readonly itemTypeOptions = ITEM_TYPE_OPTIONS;
   protected readonly categorySuggestions = signal<string[]>([]);
   protected readonly subcategorySuggestions = signal<string[]>([]);
 
   readonly title = signal('');
   readonly author = signal('');
+  readonly itemType = signal<ItemType>('book');
   readonly category = signal('');
   readonly subcategory = signal('');
   readonly language = signal('');
@@ -121,6 +125,7 @@ export class BookFormComponent implements OnInit {
       const formData = new FormData();
       formData.append('title', this.title());
       formData.append('author', this.author());
+      formData.append('itemType', this.itemType());
       if (this.category()) formData.append('category', this.category());
       if (this.subcategory()) formData.append('subcategory', this.subcategory());
       if (this.language()) formData.append('language', this.language());

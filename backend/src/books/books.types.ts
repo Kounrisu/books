@@ -10,6 +10,7 @@ export type LibraryStatus =
   | 'borrowed';
 export type ReadingStatus = 'unread' | 'reading' | 'read' | 'abandoned' | 'reference_only';
 export type MetadataStatus = 'complete' | 'needs_metadata' | 'needs_review';
+export type ItemType = 'book' | 'magazine' | 'manga' | 'bd' | 'manhwa';
 
 export interface BookRow {
   id: string;
@@ -18,6 +19,7 @@ export interface BookRow {
   author: string;
   category: string | null;
   subcategory: string | null;
+  itemType: string;
   language: string | null;
   description: string | null;
   myReview: string | null;
@@ -62,6 +64,7 @@ export interface CreateBookInput {
   author: string;
   category?: string;
   subcategory?: string;
+  itemType?: ItemType;
   language?: string;
   description?: string;
   myReview?: string;
@@ -120,6 +123,7 @@ export interface ImportRow {
   author?: string;
   category?: string;
   subcategory?: string;
+  itemType?: ItemType;
   language?: string;
   description?: string;
   isbn10?: string;

@@ -12,6 +12,7 @@ import {
   Min,
 } from 'class-validator';
 import type {
+  ItemType,
   LibraryStatus,
   MetadataStatus,
   OwnershipFormat,
@@ -20,6 +21,7 @@ import type {
 } from '../books.types.js';
 import { toOptionalBoolean, toOptionalDate, toOptionalNumber, toTagList } from './book-transforms.js';
 import {
+  ITEM_TYPES,
   LIBRARY_STATUSES,
   METADATA_STATUSES,
   OWNERSHIP_FORMATS,
@@ -35,6 +37,7 @@ export class UpdateBookDto {
   @IsOptional() @IsString() @MaxLength(300) author?: string;
   @IsOptional() @IsString() @MaxLength(120) category?: string;
   @IsOptional() @IsString() @MaxLength(120) subcategory?: string;
+  @IsOptional() @IsIn(ITEM_TYPES) itemType?: ItemType;
   @IsOptional() @IsString() @MaxLength(60) language?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() myReview?: string;

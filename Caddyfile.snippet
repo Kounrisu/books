@@ -1,0 +1,6 @@
+books.sn8w.com {
+    reverse_proxy books-frontend:4200
+}
+books-api.sn8w.com {
+    reverse_proxy books-backend:3000
+}

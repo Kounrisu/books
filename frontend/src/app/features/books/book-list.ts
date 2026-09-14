@@ -1,8 +1,9 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,8 +12,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { BookRow, BooksService, ItemType, LibraryStatus, ReadingStatus } from '../../core/books.service';
 import { LocationsService } from '../../core/locations.service';
+import { SecureImageDirective } from '../../core/secure-image.directive';
 import {
   ITEM_TYPE_OPTIONS,
   LIBRARY_STATUS_OPTIONS,
@@ -67,6 +70,35 @@ const SORTABLE_FIELDS: SortField[] = [
   'createdAt',
 ];
 
+const SORT_FIELD_LABELS: Record<SortField, string> = {
+  title: 'Title',
+  author: 'Author',
+  itemType: 'Type',
+  category: 'Category',
+  subcategory: 'Subgenre',
+  seriesName: 'Series',
+  seriesNumber: 'Issue/volume',
+  format: 'Format',
+  location: 'Location',
+  favorite: 'Favorite',
+  libraryStatus: 'Collection status',
+  readingStatus: 'Reading status',
+  createdAt: 'Date added',
+};
+
+interface MobileSortOption {
+  value: string;
+  label: string;
+}
+
+/** Card view (mobile) only ever sorts by one column at a time — this flat
+ * list of "field:direction" options replaces the table headers' click/shift-
+ * click multi-sort UI, which has nothing to click below the table breakpoint. */
+const MOBILE_SORT_OPTIONS: MobileSortOption[] = SORTABLE_FIELDS.flatMap((field) => [
+  { value: `${field}:asc`, label: `${SORT_FIELD_LABELS[field]} (ascending)` },
+  { value: `${field}:desc`, label: `${SORT_FIELD_LABELS[field]} (descending)` },
+]);
+
 @Component({
   selector: 'app-book-list',
   imports: [
@@ -74,6 +106,7 @@ const SORTABLE_FIELDS: SortField[] = [
     RouterLink,
     FormsModule,
     MatAutocompleteModule,
+    MatBadgeModule,
     MatButtonModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -82,8 +115,11 @@ const SORTABLE_FIELDS: SortField[] = [
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    MatTooltipModule,
+    SecureImageDirective,
   ],
   templateUrl: './book-list.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './book-list.scss',
 })
 export class BookListComponent implements OnInit {
@@ -108,12 +144,24 @@ export class BookListComponent implements OnInit {
   protected readonly libraryStatusLabel = libraryStatusLabel;
   protected readonly readingStatusLabel = readingStatusLabel;
   readonly deletingId = signal<string | null>(null);
+  readonly deleteError = signal<string | null>(null);
   readonly editingCategoryId = signal<string | null>(null);
   readonly categoryEditValue = signal('');
   readonly editingSubcategoryId = signal<string | null>(null);
   readonly subcategoryEditValue = signal('');
 
+  /** Row-level mutation feedback: which books have an inline edit in
+   * flight, and which have one that failed (with a retry available) —
+   * inline edits used to fail silently, rolling back with no visible sign
+   * anything went wrong. */
+  readonly mutatingIds = signal<ReadonlySet<string>>(new Set());
+  readonly mutationErrors = signal<Readonly<Record<string, string>>>({});
+  private readonly pendingWrites = new Map<string, Promise<unknown>>();
+  private readonly lastFailedRetry = new Map<string, () => void>();
+
   readonly search = signal('');
+  readonly favoriteOnlyFilter = signal(false);
+  readonly filtersExpanded = signal(false);
   readonly itemTypeFilter = signal('');
   readonly categoryFilter = signal('');
   readonly subcategoryFilter = signal('');
@@ -124,6 +172,17 @@ export class BookListComponent implements OnInit {
   readonly libraryStatusFilter = signal<LibraryStatus[]>([]);
   readonly readingStatusFilter = signal<ReadingStatus[]>([]);
   readonly sortCriteria = signal<SortCriterion[]>(DEFAULT_SORT);
+
+  readonly activeAdvancedFiltersCount = computed(() => {
+    let count = 0;
+    if (this.itemTypeFilter()) count++;
+    if (this.categoryFilter()) count++;
+    if (this.subcategoryFilter()) count++;
+    if (this.locationFilter()) count++;
+    if (this.libraryStatusFilter().length > 0) count++;
+    if (this.readingStatusFilter().length > 0) count++;
+    return count;
+  });
 
   protected readonly categories = computed(() => {
     const values = this.booksService
@@ -143,6 +202,7 @@ export class BookListComponent implements OnInit {
 
   protected readonly filteredBooks = computed(() => {
     const query = this.search().trim().toLowerCase();
+    const favOnly = this.favoriteOnlyFilter();
     const itemType = this.itemTypeFilter();
     const category = this.categoryFilter();
     const subcategory = this.subcategoryFilter();
@@ -151,6 +211,9 @@ export class BookListComponent implements OnInit {
     const readingStatuses = this.readingStatusFilter();
 
     const filtered = this.booksService.books().filter((book) => {
+      if (favOnly && !book.isFavorite) {
+        return false;
+      }
       if (itemType && book.itemType !== itemType) {
         return false;
       }
@@ -193,6 +256,7 @@ export class BookListComponent implements OnInit {
   protected hasActiveFilters(): boolean {
     return !!(
       this.search() ||
+      this.favoriteOnlyFilter() ||
       this.itemTypeFilter() ||
       this.categoryFilter() ||
       this.subcategoryFilter() ||
@@ -204,6 +268,7 @@ export class BookListComponent implements OnInit {
 
   protected clearFilters(): void {
     this.search.set('');
+    this.favoriteOnlyFilter.set(false);
     this.itemTypeFilter.set('');
     this.categoryFilter.set('');
     this.subcategoryFilter.set('');
@@ -212,16 +277,28 @@ export class BookListComponent implements OnInit {
     this.readingStatusFilter.set([]);
   }
 
+  protected toggleFavoriteOnly(): void {
+    this.favoriteOnlyFilter.set(!this.favoriteOnlyFilter());
+  }
+
+  protected toggleFiltersExpanded(): void {
+    this.filtersExpanded.set(!this.filtersExpanded());
+  }
+
   /**
    * Click sorts by only this column (toggling asc/desc if it's already the
    * sole criterion). Shift-click adds/toggles it as an additional criterion
    * on top of whatever is already active, for multi-column sort.
    */
-  protected toggleSort(field: SortField, event: MouseEvent): void {
+  protected toggleSort(field: SortField, event: Event): void {
     const current = this.sortCriteria();
     const existingIndex = current.findIndex((c) => c.field === field);
+    // Accessed via a type guard rather than a MouseEvent/KeyboardEvent
+    // parameter type — Angular's strict template checker can't always
+    // narrow $event to those specific DOM event types on a th[mat-header-cell].
+    const shiftKey = 'shiftKey' in event && (event as { shiftKey: boolean }).shiftKey;
 
-    if (!event.shiftKey) {
+    if (!shiftKey) {
       if (current.length === 1 && existingIndex === 0) {
         this.sortCriteria.set([{ field, direction: current[0].direction === 'asc' ? 'desc' : 'asc' }]);
       } else {
@@ -259,6 +336,36 @@ export class BookListComponent implements OnInit {
     };
   }
 
+  /** Space normally scrolls the page — suppress that when it's activating a
+   * focused, keyboard-operable sort header instead. */
+  protected onSortKeySpace(field: SortField, event: Event): void {
+    event.preventDefault();
+    this.toggleSort(field, event);
+  }
+
+  /** aria-sort for screen readers — only announced when this column is the
+   * sole sort criterion, since aria-sort has no concept of secondary keys. */
+  protected ariaSort(field: SortField): 'ascending' | 'descending' | 'none' {
+    const current = this.sortCriteria();
+    if (current.length !== 1 || current[0].field !== field) {
+      return 'none';
+    }
+    return current[0].direction === 'asc' ? 'ascending' : 'descending';
+  }
+
+  protected readonly mobileSortOptions = MOBILE_SORT_OPTIONS;
+
+  protected mobileSortValue(): string {
+    const current = this.sortCriteria();
+    const primary = current[0] ?? DEFAULT_SORT[0];
+    return `${primary.field}:${primary.direction}`;
+  }
+
+  protected setMobileSort(value: string): void {
+    const [field, direction] = value.split(':') as [SortField, SortDirection];
+    this.sortCriteria.set([{ field, direction }]);
+  }
+
   async deleteBook(book: BookRow): Promise<void> {
     const confirmed = await this.confirmDialog.confirm({
       title: 'Delete book',
@@ -270,25 +377,91 @@ export class BookListComponent implements OnInit {
       return;
     }
     this.deletingId.set(book.id);
+    this.deleteError.set(null);
     try {
       await this.booksService.delete(book.id);
+    } catch {
+      this.deleteError.set(`Could not delete "${book.title}". Please try again.`);
     } finally {
       this.deletingId.set(null);
     }
   }
 
-  async toggleFavorite(book: BookRow): Promise<void> {
+  private markMutating(id: string, active: boolean): void {
+    this.mutatingIds.update((set) => {
+      const next = new Set(set);
+      if (active) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  private clearMutationError(id: string): void {
+    this.mutationErrors.update((errors) => {
+      if (!(id in errors)) {
+        return errors;
+      }
+      const { [id]: _removed, ...rest } = errors;
+      return rest;
+    });
+  }
+
+  /**
+   * Applies an optimistic field edit and serializes it behind any
+   * already-in-flight write for the same book, so an earlier request's
+   * response can never land after (and overwrite) a later optimistic
+   * value. On failure the field is rolled back and a retryable, visible
+   * error is shown — inline edits used to roll back silently, with the
+   * user having no idea the save failed.
+   */
+  private runFieldMutation(
+    bookId: string,
+    optimistic: (book: BookRow) => BookRow,
+    rollback: (book: BookRow) => BookRow,
+    fields: Record<string, string>,
+  ): void {
+    this.clearMutationError(bookId);
+    this.booksService.books.update((list) => list.map((b) => (b.id === bookId ? optimistic(b) : b)));
+    this.markMutating(bookId, true);
+    this.lastFailedRetry.set(bookId, () => this.runFieldMutation(bookId, optimistic, rollback, fields));
+
+    const prior = this.pendingWrites.get(bookId) ?? Promise.resolve();
+    const task = prior
+      .catch(() => undefined)
+      .then(() => this.booksService.patchFields(bookId, fields))
+      .then(() => {
+        this.lastFailedRetry.delete(bookId);
+      })
+      .catch(() => {
+        this.booksService.books.update((list) => list.map((b) => (b.id === bookId ? rollback(b) : b)));
+        this.mutationErrors.update((errors) => ({ ...errors, [bookId]: 'Could not save this change.' }));
+      })
+      .finally(() => {
+        this.markMutating(bookId, false);
+      });
+    this.pendingWrites.set(bookId, task);
+  }
+
+  protected retryMutation(bookId: string): void {
+    this.lastFailedRetry.get(bookId)?.();
+  }
+
+  protected dismissMutationError(bookId: string): void {
+    this.clearMutationError(bookId);
+    this.lastFailedRetry.delete(bookId);
+  }
+
+  toggleFavorite(book: BookRow): void {
     const previous = book.isFavorite;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, isFavorite: !previous } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, isFavorite: !previous }),
+      (b) => ({ ...b, isFavorite: previous }),
+      { isFavorite: String(!previous) },
     );
-    try {
-      await this.booksService.patchFields(book.id, { isFavorite: String(!previous) });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, isFavorite: previous } : b)),
-      );
-    }
   }
 
   protected startEditingCategory(book: BookRow): void {
@@ -296,23 +469,19 @@ export class BookListComponent implements OnInit {
     this.categoryEditValue.set(book.category ?? '');
   }
 
-  async commitCategoryEdit(book: BookRow): Promise<void> {
+  commitCategoryEdit(book: BookRow): void {
     const value = this.categoryEditValue().trim();
     this.editingCategoryId.set(null);
     if (value === (book.category ?? '')) {
       return;
     }
     const previous = book.category;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, category: value || null } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, category: value || null }),
+      (b) => ({ ...b, category: previous }),
+      { category: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { category: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, category: previous } : b)),
-      );
-    }
   }
 
   protected startEditingSubcategory(book: BookRow): void {
@@ -320,92 +489,72 @@ export class BookListComponent implements OnInit {
     this.subcategoryEditValue.set(book.subcategory ?? '');
   }
 
-  async commitSubcategoryEdit(book: BookRow): Promise<void> {
+  commitSubcategoryEdit(book: BookRow): void {
     const value = this.subcategoryEditValue().trim();
     this.editingSubcategoryId.set(null);
     if (value === (book.subcategory ?? '')) {
       return;
     }
     const previous = book.subcategory;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, subcategory: value || null } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, subcategory: value || null }),
+      (b) => ({ ...b, subcategory: previous }),
+      { subcategory: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { subcategory: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, subcategory: previous } : b)),
-      );
-    }
   }
 
-  async updateLocation(book: BookRow, value: string): Promise<void> {
+  updateLocation(book: BookRow, value: string): void {
     const nextLocationId = value || null;
     if (nextLocationId === book.locationId) {
       return;
     }
     const previous = book.locationId;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, locationId: nextLocationId } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, locationId: nextLocationId }),
+      (b) => ({ ...b, locationId: previous }),
+      { locationId: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { locationId: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, locationId: previous } : b)),
-      );
-    }
   }
 
-  async updateItemType(book: BookRow, value: ItemType): Promise<void> {
+  updateItemType(book: BookRow, value: ItemType): void {
     if (value === book.itemType) {
       return;
     }
     const previous = book.itemType;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, itemType: value } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, itemType: value }),
+      (b) => ({ ...b, itemType: previous }),
+      { itemType: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { itemType: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, itemType: previous } : b)),
-      );
-    }
   }
 
-  async updateLibraryStatus(book: BookRow, value: LibraryStatus): Promise<void> {
+  updateLibraryStatus(book: BookRow, value: LibraryStatus): void {
     if (value === book.libraryStatus) {
       return;
     }
     const previous = book.libraryStatus;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, libraryStatus: value } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, libraryStatus: value }),
+      (b) => ({ ...b, libraryStatus: previous }),
+      { libraryStatus: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { libraryStatus: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, libraryStatus: previous } : b)),
-      );
-    }
   }
 
-  async updateReadingStatus(book: BookRow, value: ReadingStatus): Promise<void> {
+  updateReadingStatus(book: BookRow, value: ReadingStatus): void {
     if (value === book.readingStatus) {
       return;
     }
     const previous = book.readingStatus;
-    this.booksService.books.update((list) =>
-      list.map((b) => (b.id === book.id ? { ...b, readingStatus: value } : b)),
+    this.runFieldMutation(
+      book.id,
+      (b) => ({ ...b, readingStatus: value }),
+      (b) => ({ ...b, readingStatus: previous }),
+      { readingStatus: value },
     );
-    try {
-      await this.booksService.patchFields(book.id, { readingStatus: value });
-    } catch {
-      this.booksService.books.update((list) =>
-        list.map((b) => (b.id === book.id ? { ...b, readingStatus: previous } : b)),
-      );
-    }
   }
 
   private sortBooks(books: BookRow[]): BookRow[] {

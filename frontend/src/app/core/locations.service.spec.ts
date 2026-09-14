@@ -15,6 +15,27 @@ describe('LocationsService', () => {
 
   afterEach(() => httpMock.verify());
 
+  it('walks nested locations without including a different top-level place', () => {
+    service.locations.set([
+      { id: 'home', name: 'Home', parentLocationId: null },
+      { id: 'shelf', name: 'Shelf', parentLocationId: 'home' },
+      { id: 'box', name: 'Box', parentLocationId: 'shelf' },
+      { id: 'garage', name: 'Garage', parentLocationId: null },
+    ] as any);
+    expect([...service.subtreeIds('home')]).toEqual(['home', 'shelf', 'box']);
+    expect(service.breadcrumbs('box').map((entry) => entry.name)).toEqual(['Home', 'Shelf', 'Box']);
+    expect(service.childrenOf('home').map((entry) => entry.id)).toEqual(['shelf']);
+  });
+
+  it('terminates hierarchy traversal if a corrupt cycle reaches the client', () => {
+    service.locations.set([
+      { id: 'a', name: 'A', parentLocationId: 'b' },
+      { id: 'b', name: 'B', parentLocationId: 'a' },
+    ] as any);
+    expect(service.subtreeIds('a').size).toBe(2);
+    expect(service.breadcrumbs('a').length).toBe(2);
+  });
+
   it('loads locations into the locations signal', async () => {
     const loadPromise = service.load();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/locations`);

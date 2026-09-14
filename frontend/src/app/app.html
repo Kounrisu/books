@@ -30,6 +30,15 @@
         <mat-icon>settings</mat-icon>
         Settings
       </a>
+      <button mat-icon-button type="button" [matMenuTriggerFor]="themeMenu" matTooltip="Toggle theme" aria-label="Toggle theme">
+        @if (themeService.mode() === 'dark') {
+          <mat-icon>dark_mode</mat-icon>
+        } @else if (themeService.mode() === 'light') {
+          <mat-icon>light_mode</mat-icon>
+        } @else {
+          <mat-icon>brightness_auto</mat-icon>
+        }
+      </button>
       <button mat-button type="button" (click)="logout()">
         <mat-icon>logout</mat-icon>
         Logout
@@ -66,9 +75,34 @@
         <mat-icon>settings</mat-icon>
         Settings
       </a>
+      <button mat-menu-item type="button" [matMenuTriggerFor]="themeMenu">
+        @if (themeService.mode() === 'dark') {
+          <mat-icon>dark_mode</mat-icon>
+        } @else if (themeService.mode() === 'light') {
+          <mat-icon>light_mode</mat-icon>
+        } @else {
+          <mat-icon>brightness_auto</mat-icon>
+        }
+        <span>Theme ({{ themeService.mode() }})</span>
+      </button>
       <button mat-menu-item type="button" (click)="logout()">
         <mat-icon>logout</mat-icon>
         Logout
+      </button>
+    </mat-menu>
+
+    <mat-menu #themeMenu="matMenu">
+      <button mat-menu-item type="button" (click)="themeService.setMode('light')">
+        <mat-icon>light_mode</mat-icon>
+        <span>Light mode</span>
+      </button>
+      <button mat-menu-item type="button" (click)="themeService.setMode('dark')">
+        <mat-icon>dark_mode</mat-icon>
+        <span>Dark mode</span>
+      </button>
+      <button mat-menu-item type="button" (click)="themeService.setMode('system')">
+        <mat-icon>brightness_auto</mat-icon>
+        <span>System default</span>
       </button>
     </mat-menu>
   </mat-toolbar>
@@ -78,6 +112,32 @@
       <span>You're in the demo library — shared with other visitors and reset automatically. Don't add anything private.</span>
     </div>
   }
+} @else {
+  <div class="unauth-theme-bar">
+    <button mat-icon-button type="button" [matMenuTriggerFor]="unauthThemeMenu" matTooltip="Toggle theme" aria-label="Toggle theme">
+      @if (themeService.mode() === 'dark') {
+        <mat-icon>dark_mode</mat-icon>
+      } @else if (themeService.mode() === 'light') {
+        <mat-icon>light_mode</mat-icon>
+      } @else {
+        <mat-icon>brightness_auto</mat-icon>
+      }
+    </button>
+    <mat-menu #unauthThemeMenu="matMenu">
+      <button mat-menu-item type="button" (click)="themeService.setMode('light')">
+        <mat-icon>light_mode</mat-icon>
+        <span>Light mode</span>
+      </button>
+      <button mat-menu-item type="button" (click)="themeService.setMode('dark')">
+        <mat-icon>dark_mode</mat-icon>
+        <span>Dark mode</span>
+      </button>
+      <button mat-menu-item type="button" (click)="themeService.setMode('system')">
+        <mat-icon>brightness_auto</mat-icon>
+        <span>System default</span>
+      </button>
+    </mat-menu>
+  </div>
 }
 <main class="app-content">
   <router-outlet />

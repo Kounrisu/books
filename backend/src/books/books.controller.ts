@@ -53,8 +53,8 @@ export class BooksController {
     @Body() body: CreateBookDto,
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<BookRow> {
-    const input: CreateBookInput = { ...body, coverImagePath: photo?.filename };
-    return this.booksService.create(userId, input);
+    const input: CreateBookInput = { ...body };
+    return this.booksService.create(userId, input, photo?.buffer);
   }
 
   @Get()
@@ -135,6 +135,11 @@ export class BooksController {
     return this.booksService.importZip(userId, archive.buffer);
   }
 
+  @Get(':id')
+  findOne(@CurrentUser() userId: string, @Param('id') id: string): Promise<BookRow> {
+    return this.booksService.findOne(userId, id);
+  }
+
   @Patch(':id')
   @UseInterceptors(FileInterceptor('photo', imageUploadOptions))
   update(
@@ -144,10 +149,7 @@ export class BooksController {
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<BookRow> {
     const input: UpdateBookInput = { ...body };
-    if (photo?.filename) {
-      input.coverImagePath = photo.filename;
-    }
-    return this.booksService.update(userId, id, input);
+    return this.booksService.update(userId, id, input, photo?.buffer);
   }
 
   @Delete(':id')

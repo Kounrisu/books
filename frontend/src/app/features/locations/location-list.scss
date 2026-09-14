@@ -1,43 +1,72 @@
+:host { display: block; }
+.breadcrumbs {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;
+  margin-bottom: 1rem; overflow-wrap: anywhere;
+  a { padding: 0.5rem 0; }
+}
+a { color: var(--mat-sys-primary); }
+a:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 3px; }
 .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;
+  h1, h2 { margin: 0; overflow-wrap: anywhere; }
 }
-
-.location-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
+.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.page-description { margin-bottom: 0; color: var(--mat-sys-on-surface-variant); }
+.section-count { font-weight: normal; color: var(--mat-sys-on-surface-variant); }
+.location-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 1rem; }
 .location-card {
-  img[mat-card-image] {
-    height: 160px;
-    object-fit: cover;
-  }
+  overflow: hidden;
+  border-radius: 12px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 
-  .coords {
-    color: var(--mat-sys-on-surface-variant);
-    font-size: 0.875rem;
-  }
-
-  .parent-path {
-    color: var(--mat-sys-on-surface-variant);
-    font-size: 0.8rem;
-    margin: 0 0 0.5rem;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 }
-
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: var(--mat-sys-on-surface-variant);
-  padding: 2rem;
+.location-open { display: block; flex: 1; color: inherit; text-decoration: none; }
+.location-open:hover { background: var(--mat-sys-surface-container-low); }
+.location-open:focus-visible { outline-offset: -3px; }
+.location-photo { display: block; width: 100%; height: 140px; object-fit: cover; }
+.location-placeholder { display: flex; align-items: center; padding: 1rem 1rem 0; color: var(--mat-sys-primary); }
+.location-summary {
+  padding: 1rem;
+  h3 { display: flex; justify-content: space-between; gap: 0.5rem; margin: 0 0 0.75rem; overflow-wrap: anywhere; }
+  h3 mat-icon { flex-shrink: 0; }
+  p { margin: 0.25rem 0; font-size: 0.875rem; color: var(--mat-sys-on-surface-variant); }
 }
-
-.loading-state {
-  display: flex;
-  justify-content: center;
-  padding: 3rem;
+.location-reference {
+  display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;
+  img { width: 240px; max-width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; }
+}
+.coords { display: flex; gap: 0.25rem; align-items: center; }
+.location-books { margin-top: 2rem; }
+.book-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.book-controls mat-form-field { flex: 1 1 300px; }
+.result-count { color: var(--mat-sys-on-surface-variant); }
+.book-list {
+  list-style: none; padding: 0; margin: 0;
+  li { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+}
+.book-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit; }
+.book-link:hover strong { text-decoration: underline; }
+.book-link img, .book-placeholder {
+  width: 42px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+.book-placeholder { display: flex; align-items: center; justify-content: center; background: var(--mat-sys-surface-container); }
+.book-info { display: flex; flex-direction: column; gap: 0.25rem; overflow-wrap: anywhere; min-width: 0; }
+.book-info > span { color: var(--mat-sys-on-surface-variant); }
+.book-location { max-width: 40%; font-size: 0.875rem; overflow-wrap: anywhere; padding: 0.5rem 0; }
+.empty-state { grid-column: 1 / -1; text-align: center; color: var(--mat-sys-on-surface-variant); padding: 2rem; }
+.loading-state { display: flex; justify-content: center; padding: 3rem; }
+@media (max-width: 600px) {
+  .page-header { flex-direction: column; align-items: stretch; }
+  .book-list li { align-items: stretch; flex-direction: column; gap: 0.25rem; }
+  .book-location { max-width: 100%; margin-left: 52px; }
 }

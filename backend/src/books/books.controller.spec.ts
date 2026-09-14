@@ -10,8 +10,8 @@ describe('toOptionalNumber', () => {
     expect(toOptionalNumber({ value: undefined })).toBeUndefined();
   });
 
-  it('leaves the value unset when given an empty string', () => {
-    expect(toOptionalNumber({ value: '' })).toBeUndefined();
+  it('treats an empty string as an explicit clear (null), not "unset"', () => {
+    expect(toOptionalNumber({ value: '' })).toBeNull();
   });
 
   it('parses a non-zero numeric string', () => {
@@ -20,8 +20,8 @@ describe('toOptionalNumber', () => {
 });
 
 describe('toOptionalDate', () => {
-  it('leaves the value unset when given an empty string', () => {
-    expect(toOptionalDate({ value: '' })).toBeUndefined();
+  it('treats an empty string as an explicit clear (null), not "unset"', () => {
+    expect(toOptionalDate({ value: '' })).toBeNull();
   });
 
   it('parses a provided date string', () => {

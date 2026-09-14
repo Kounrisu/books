@@ -1,53 +1,144 @@
-<div class="page-header">
-  <h1>Locations</h1>
-  <a mat-flat-button color="primary" routerLink="/locations/new">
-    <mat-icon>add</mat-icon>
-    Add location
-  </a>
-</div>
-
-@if (locationsService.error(); as errorMessage) {
-  <p class="error">{{ errorMessage }}</p>
-}
+<nav class="breadcrumbs" aria-label="Location breadcrumbs">
+  @if (locationId()) {
+    <a routerLink="/locations">Locations</a>
+    @for (location of breadcrumbLocations(); track location.id; let last = $last) {
+      <mat-icon aria-hidden="true">chevron_right</mat-icon>
+      @if (last) {
+        <span aria-current="page">{{ location.name }}</span>
+      } @else {
+        <a [routerLink]="['/locations', location.id]">{{ location.name }}</a>
+      }
+    }
+  }
+</nav>
 
 @if (locationsService.loading()) {
-  <div class="loading-state">
-    <mat-spinner diameter="40"></mat-spinner>
+  <div class="loading-state" role="status" aria-label="Loading locations"><mat-spinner diameter="40"></mat-spinner></div>
+} @else if (locationsService.error(); as errorMessage) {
+  <div class="empty-state" role="alert">
+    <p class="error">{{ errorMessage }}</p>
+    <button mat-stroked-button type="button" (click)="reload()">Try again</button>
+  </div>
+} @else if (locationId() && !currentLocation()) {
+  <div class="empty-state">
+    <h1>Location not found</h1>
+    <p>This location may have been deleted or is not part of your library.</p>
+    <a mat-stroked-button routerLink="/locations">Back to locations</a>
   </div>
 } @else {
-  <div class="location-grid">
-    @for (location of locationsService.locations(); track location.id) {
-      <mat-card appearance="outlined" class="location-card">
-        @if (location.photoPath) {
-          <img mat-card-image [src]="apiBaseUrl + '/uploads/' + location.photoPath" [alt]="location.name" />
+  <div class="page-header">
+    <div>
+      <h1>{{ currentLocation()?.name ?? 'Locations' }}</h1>
+      <p class="page-description">{{ currentLocation() ? 'Explore the shelves, rooms and boxes inside this location.' : 'Start with a place, then open it to find its shelves and books.' }}</p>
+    </div>
+    <div class="header-actions">
+      @if (currentLocation(); as current) {
+        <a mat-stroked-button [routerLink]="['/locations', current.id, 'edit']"><mat-icon>edit</mat-icon> Edit location</a>
+      }
+      <a mat-flat-button routerLink="/locations/new" [queryParams]="locationId() ? { parentLocationId: locationId() } : {}">
+        <mat-icon>add</mat-icon> {{ currentLocation() ? 'Add location inside' : 'Add location' }}
+      </a>
+    </div>
+  </div>
+
+  @if (currentLocation(); as current) {
+    @if (current.photoPath || (current.latitude !== null && current.longitude !== null)) {
+      <div class="location-reference">
+        @if (current.photoPath) {
+          <img [appSecureSrc]="apiBaseUrl + '/uploads/' + current.photoPath" [alt]="current.name" />
         }
-        <mat-card-content>
-          <h3>{{ location.name }}</h3>
-          @if (location.parentLocationId) {
-            <p class="parent-path">in {{ locationsService.pathName(location.parentLocationId) }}</p>
+        @if (current.latitude !== null && current.longitude !== null) {
+          <p class="coords"><mat-icon aria-hidden="true">place</mat-icon> {{ current.latitude }}, {{ current.longitude }}</p>
+        }
+      </div>
+    }
+    <h2>Inside {{ current.name }} <span class="section-count">({{ childLocations().length }})</span></h2>
+  }
+
+  @if (mutationError(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <div class="location-grid">
+    @for (location of childLocations(); track location.id) {
+      <mat-card appearance="outlined" class="location-card">
+        <a class="location-open" [routerLink]="['/locations', location.id]">
+          @if (location.photoPath) {
+            <img class="location-photo" [appSecureSrc]="apiBaseUrl + '/uploads/' + location.photoPath" alt="" />
+          } @else {
+            <div class="location-placeholder"><mat-icon aria-hidden="true">folder_open</mat-icon></div>
           }
-          @if (location.latitude && location.longitude) {
-            <p class="coords">📍 {{ location.latitude }}, {{ location.longitude }}</p>
-          }
-        </mat-card-content>
+          <div class="location-summary">
+            <h3>{{ location.name }} <mat-icon aria-hidden="true">chevron_right</mat-icon></h3>
+            <p>{{ locationsService.childrenOf(location.id).length }} locations inside</p>
+            @if (!booksService.loading() && !booksService.error()) {
+              <p>{{ bookCounts().get(location.id) ?? 0 }} books, including locations inside</p>
+            }
+          </div>
+        </a>
         <mat-card-actions>
-          <a mat-button [routerLink]="['/locations', location.id, 'edit']">
-            <mat-icon>edit</mat-icon>
-            Edit
-          </a>
-          <button
-            mat-button
-            type="button"
-            [disabled]="deletingId() === location.id"
-            (click)="deleteLocation(location)"
-          >
-            <mat-icon>delete</mat-icon>
-            Delete
-          </button>
+          <a mat-button [routerLink]="['/locations', location.id, 'edit']" [attr.aria-label]="'Edit ' + location.name"><mat-icon>edit</mat-icon> Edit</a>
+          <button mat-button type="button" [disabled]="deletingId() !== null" (click)="deleteLocation(location)" [attr.aria-label]="'Delete ' + location.name"><mat-icon>delete</mat-icon> Delete</button>
         </mat-card-actions>
       </mat-card>
     } @empty {
-      <p class="empty-state">No locations yet. Add your first one!</p>
+      <div class="empty-state">
+        <mat-icon aria-hidden="true">folder_open</mat-icon>
+        <p>{{ currentLocation() ? 'No locations inside yet. Add a bookshelf, room or box using “Add location inside”.' : 'No locations yet. Add a place such as Home to get started.' }}</p>
+      </div>
     }
   </div>
+
+  @if (booksService.error(); as message) {
+    <div class="empty-state" role="alert">
+      <p class="error">{{ message }} Book counts are unavailable.</p>
+      <button mat-stroked-button type="button" (click)="booksService.load()">Retry books</button>
+    </div>
+  }
+
+  @if (currentLocation(); as current) {
+    <section class="location-books" aria-labelledby="location-books-title">
+      <div class="page-header">
+        <h2 id="location-books-title">Books in {{ current.name }}</h2>
+        <a mat-stroked-button routerLink="/books/new" [queryParams]="{ locationId: current.id }"><mat-icon>add</mat-icon> Add book here</a>
+      </div>
+      <div class="book-controls">
+        <mat-form-field appearance="outline">
+          <mat-label>Search books in this location</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Title, author, ISBN, series or tag" />
+          @if (search()) {
+            <button mat-icon-button matSuffix type="button" aria-label="Clear book search" (click)="search.set('')"><mat-icon>close</mat-icon></button>
+          }
+        </mat-form-field>
+        @if (childLocations().length) {
+          <mat-checkbox [ngModel]="includeChildren()" (ngModelChange)="includeChildren.set($event)">Include locations inside</mat-checkbox>
+        }
+      </div>
+      @if (booksService.loading()) {
+        <div class="loading-state" role="status" aria-label="Loading books"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else if (!booksService.error()) {
+        <p class="result-count" role="status">{{ visibleBooks().length }} of {{ scopedBooks().length }} books</p>
+        <ul class="book-list">
+          @for (book of visibleBooks(); track book.id) {
+            <li>
+              <a class="book-link" [routerLink]="['/books', book.id]">
+                @if (book.coverImagePath) {
+                  <img [appSecureSrc]="apiBaseUrl + '/uploads/' + book.coverImagePath" alt="" />
+                } @else {
+                  <span class="book-placeholder"><mat-icon aria-hidden="true">menu_book</mat-icon></span>
+                }
+                <span class="book-info"><strong>{{ book.title }}</strong><span>{{ book.author }}</span></span>
+              </a>
+              @if (book.locationId) {
+                <a class="book-location" [routerLink]="['/locations', book.locationId]">{{ locationsService.pathName(book.locationId) }}</a>
+              }
+            </li>
+          } @empty {
+            <li class="empty-state">{{ search() ? 'No books match your search in this location.' : 'No books assigned here yet. Add a book here or choose this location when editing an existing book.' }}</li>
+          }
+        </ul>
+      }
+    </section>
+  }
 }

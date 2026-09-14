@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SettingsService } from '../../core/settings.service';
@@ -8,6 +8,7 @@ import { CONFIGURABLE_COLUMNS, CONFIGURABLE_FILTERS } from '../../core/book-list
   selector: 'app-settings-page',
   imports: [MatCardModule, MatCheckboxModule],
   templateUrl: './settings-page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './settings-page.scss',
 })
 export class SettingsPageComponent implements OnInit {

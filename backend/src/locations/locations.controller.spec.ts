@@ -49,13 +49,16 @@ describe('LocationsController', () => {
 
     controller.create('user-1', { name: 'Shelf', latitude: '1.5', longitude: '-2.5' });
 
-    expect(service.create).toHaveBeenCalledWith('user-1', {
-      name: 'Shelf',
-      photoPath: undefined,
-      latitude: 1.5,
-      longitude: -2.5,
-      parentLocationId: null,
-    });
+    expect(service.create).toHaveBeenCalledWith(
+      'user-1',
+      {
+        name: 'Shelf',
+        latitude: 1.5,
+        longitude: -2.5,
+        parentLocationId: null,
+      },
+      undefined,
+    );
   });
 
   it('treats an empty coordinate as unset rather than NaN', () => {
@@ -64,12 +67,15 @@ describe('LocationsController', () => {
 
     controller.create('user-1', { name: 'Shelf', latitude: '' });
 
-    expect(service.create).toHaveBeenCalledWith('user-1', {
-      name: 'Shelf',
-      photoPath: undefined,
-      latitude: undefined,
-      longitude: undefined,
-      parentLocationId: null,
-    });
+    expect(service.create).toHaveBeenCalledWith(
+      'user-1',
+      {
+        name: 'Shelf',
+        latitude: undefined,
+        longitude: undefined,
+        parentLocationId: null,
+      },
+      undefined,
+    );
   });
 });

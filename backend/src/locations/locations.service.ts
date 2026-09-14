@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import type { CreateLocationInput, LocationRow, UpdateLocationInput } from './locations.types.js';
 
 @Injectable()
 export class LocationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploads: UploadsService,
+  ) {}
 
   private async assertValidParent(userId: string, id: string | null, parentLocationId: string | null | undefined): Promise<void> {
     if (!parentLocationId) {
@@ -32,13 +36,14 @@ export class LocationsService {
     }
   }
 
-  async create(userId: string, input: CreateLocationInput): Promise<LocationRow> {
+  async create(userId: string, input: CreateLocationInput, photoBuffer?: Buffer): Promise<LocationRow> {
     await this.assertValidParent(userId, null, input.parentLocationId);
+    const photoPath = photoBuffer ? await this.uploads.saveImage(photoBuffer) : input.photoPath;
     return this.prisma.location.create({
       data: {
         userId,
         name: input.name,
-        photoPath: input.photoPath,
+        photoPath,
         latitude: input.latitude,
         longitude: input.longitude,
         parentLocationId: input.parentLocationId || null,
@@ -50,24 +55,41 @@ export class LocationsService {
     return this.prisma.location.findMany({ where: { userId }, orderBy: { name: 'asc' } });
   }
 
-  async update(userId: string, id: string, input: UpdateLocationInput): Promise<LocationRow> {
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateLocationInput,
+    photoBuffer?: Buffer,
+  ): Promise<LocationRow> {
+    // Check ownership before writing any new photo to disk.
+    const existing = await this.prisma.location.findFirst({ where: { id, userId } });
+    if (!existing) {
+      throw new NotFoundException('Location not found');
+    }
     if (input.parentLocationId !== undefined) {
       await this.assertValidParent(userId, id, input.parentLocationId);
     }
-    const result = await this.prisma.location.updateMany({
+    const photoPath = photoBuffer ? await this.uploads.saveImage(photoBuffer) : input.photoPath;
+    await this.prisma.location.updateMany({
       where: { id, userId },
-      data: { ...input, parentLocationId: input.parentLocationId === undefined ? undefined : input.parentLocationId || null },
+      data: {
+        ...input,
+        photoPath,
+        parentLocationId: input.parentLocationId === undefined ? undefined : input.parentLocationId || null,
+      },
     });
-    if (result.count === 0) {
-      throw new NotFoundException('Location not found');
+    if (photoBuffer && existing.photoPath) {
+      await this.uploads.deleteFile(existing.photoPath);
     }
     return this.prisma.location.findFirstOrThrow({ where: { id, userId } });
   }
 
   async delete(userId: string, id: string): Promise<void> {
-    const result = await this.prisma.location.deleteMany({ where: { id, userId } });
-    if (result.count === 0) {
+    const existing = await this.prisma.location.findFirst({ where: { id, userId } });
+    if (!existing) {
       throw new NotFoundException('Location not found');
     }
+    await this.prisma.location.delete({ where: { id: existing.id } });
+    await this.uploads.deleteFile(existing.photoPath);
   }
 }

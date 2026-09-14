@@ -53,6 +53,46 @@ export class LocationsService {
     return this.locations().find((location) => location.id === id);
   }
 
+  childrenOf(parentId: string | null): LocationRow[] {
+    return this.locations()
+      .filter((location) => (location.parentLocationId ?? null) === parentId)
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  }
+
+  /** Includes the location itself; visited IDs also protect against corrupt cycles. */
+  subtreeIds(id: string): Set<string> {
+    const ids = new Set<string>();
+    const pending = [id];
+    const children = new Map<string, string[]>();
+    for (const location of this.locations()) {
+      if (location.parentLocationId) {
+        const siblings = children.get(location.parentLocationId) ?? [];
+        siblings.push(location.id);
+        children.set(location.parentLocationId, siblings);
+      }
+    }
+    while (pending.length) {
+      const current = pending.pop()!;
+      if (ids.has(current)) continue;
+      ids.add(current);
+      pending.push(...(children.get(current) ?? []));
+    }
+    return ids;
+  }
+
+  /** Ancestors and current location, ordered from the top-level place. */
+  breadcrumbs(id: string): LocationRow[] {
+    const path: LocationRow[] = [];
+    const seen = new Set<string>();
+    let current = this.findById(id);
+    while (current && !seen.has(current.id)) {
+      path.unshift(current);
+      seen.add(current.id);
+      current = current.parentLocationId ? this.findById(current.parentLocationId) : undefined;
+    }
+    return path;
+  }
+
   /** Full "Home / Garage / Cardbox #3" style path, walking up parents. */
   pathName(id: string | null | undefined): string {
     if (!id) {

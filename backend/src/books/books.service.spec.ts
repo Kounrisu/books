@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { BooksService } from './books.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
+import type { UploadsService } from '../uploads/uploads.service.js';
 
 function makePrismaMock(
   overrides: Partial<
@@ -8,6 +9,7 @@ function makePrismaMock(
       | 'create'
       | 'findMany'
       | 'updateMany'
+      | 'findFirst'
       | 'findFirstOrThrow'
       | 'deleteMany'
       | 'locationFindFirst',
@@ -19,12 +21,20 @@ function makePrismaMock(
     book: {
       create: vi.fn().mockResolvedValue(overrides.create ?? null),
       findMany: vi.fn().mockResolvedValue(overrides.findMany ?? []),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          'findFirst' in overrides
+            ? overrides.findFirst
+            : { id: 'book-1', userId: 'user-1', coverImagePath: null },
+        ),
       updateMany: vi
         .fn()
         .mockResolvedValue(overrides.updateMany ?? { count: 1 }),
       findFirstOrThrow: vi
         .fn()
         .mockResolvedValue(overrides.findFirstOrThrow ?? null),
+      delete: vi.fn().mockResolvedValue(overrides.deleteMany ?? null),
       deleteMany: vi
         .fn()
         .mockResolvedValue(overrides.deleteMany ?? { count: 1 }),
@@ -44,6 +54,13 @@ function makePrismaMock(
   } as unknown as PrismaService;
 }
 
+function makeUploadsMock(): UploadsService {
+  return {
+    saveImage: vi.fn().mockResolvedValue('generated-filename.webp'),
+    deleteFile: vi.fn().mockResolvedValue(undefined),
+  } as unknown as UploadsService;
+}
+
 describe('BooksService', () => {
   it('creates a book scoped to the given user, requiring only title and author', async () => {
     const prisma = makePrismaMock({
@@ -54,7 +71,7 @@ describe('BooksService', () => {
         author: 'Herbert',
       },
     });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await service.create('user-1', { title: 'Dune', author: 'Herbert' });
 
@@ -74,7 +91,7 @@ describe('BooksService', () => {
         { id: 'b', userId: 'user-1', category: 'Sci-Fi', myNote: 5 },
       ],
     });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     const result = await service.findAllForUser('user-1');
 
@@ -102,7 +119,7 @@ describe('BooksService', () => {
         { id: 'a', userId: 'user-1', category: 'Sci-Fi', myNote: null },
       ],
     });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     const result = await service.findAllForUser('user-1');
 
@@ -110,8 +127,8 @@ describe('BooksService', () => {
   });
 
   it('rejects updating a book that does not belong to the user', async () => {
-    const prisma = makePrismaMock({ updateMany: { count: 0 } });
-    const service = new BooksService(prisma);
+    const prisma = makePrismaMock({ findFirst: null });
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await expect(
       service.update('user-1', 'book-of-someone-else', { title: 'x' }),
@@ -119,8 +136,8 @@ describe('BooksService', () => {
   });
 
   it('rejects deleting a book that does not belong to the user', async () => {
-    const prisma = makePrismaMock({ deleteMany: { count: 0 } });
-    const service = new BooksService(prisma);
+    const prisma = makePrismaMock({ findFirst: null });
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await expect(
       service.delete('user-1', 'book-of-someone-else'),
@@ -129,7 +146,7 @@ describe('BooksService', () => {
 
   it('rejects creating a book with a locationId that belongs to a different user', async () => {
     const prisma = makePrismaMock({ locationFindFirst: null });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await expect(
       service.create('user-1', {
@@ -147,7 +164,7 @@ describe('BooksService', () => {
 
   it('rejects updating a book with a locationId that belongs to a different user', async () => {
     const prisma = makePrismaMock({ locationFindFirst: null });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await expect(
       service.update('user-1', 'book-1', {
@@ -166,7 +183,7 @@ describe('BooksService', () => {
       updateMany: { count: 1 },
       findFirstOrThrow: { id: 'book-1', userId: 'user-1', locationId: null },
     });
-    const service = new BooksService(prisma);
+    const service = new BooksService(prisma, makeUploadsMock());
 
     await service.update('user-1', 'book-1', { locationId: '' });
 

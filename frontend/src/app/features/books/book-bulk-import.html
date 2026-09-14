@@ -123,15 +123,96 @@
 
 <mat-card appearance="outlined" class="section-card">
   <mat-card-header>
-    <mat-card-title>Full local backup (photos + metadata)</mat-card-title>
+    <mat-card-title>Full library backup (everything, restores a lost library)</mat-card-title>
   </mat-card-header>
   <mat-card-content>
     <p class="hint">
-      Download a single .zip with every exported book's metadata AND a compressed copy of
-      its cover photo, keyed by book id. Unzip it locally to run the cover-recognition
-      script against the photos, then import the same folder back below to restore both
-      the metadata and the photos — this uses the "Only export books needing metadata"
-      checkbox above too.
+      Download a single .zip covering your entire library — books, locations (with their
+      nesting), loans, timeline history, collection areas, settings, and cover/location
+      photos. This is the backup to use for disaster recovery: restoring it into an empty
+      library recreates every record, not just updates to existing ones.
+    </p>
+
+    @if (fullBackupExportError()) {
+      <p class="error">{{ fullBackupExportError() }}</p>
+    }
+
+    <button mat-stroked-button type="button" [disabled]="fullBackupExporting()" (click)="downloadFullBackup()">
+      @if (fullBackupExporting()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Building backup&hellip;</ng-container>
+      } @else {
+        <ng-container><mat-icon>archive</mat-icon> Download full backup (.zip)</ng-container>
+      }
+    </button>
+
+    <div class="file-upload">
+      <button mat-stroked-button type="button" (click)="fullBackupInput.click()">
+        <mat-icon>upload_file</mat-icon>
+        Choose full backup .zip
+      </button>
+      <input
+        #fullBackupInput
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        (change)="onFullBackupFileSelected($event)"
+      />
+      @if (fullBackupFile(); as file) {
+        <span class="file-name">{{ file.name }}</span>
+      }
+    </div>
+
+    @if (fullBackupError()) {
+      <p class="error">{{ fullBackupError() }}</p>
+    }
+
+    <button
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="fullBackupImporting() || !fullBackupFile()"
+      (click)="submitFullBackupRestore()"
+    >
+      @if (fullBackupImporting()) {
+        <ng-container><mat-icon class="spin">progress_activity</mat-icon> Restoring&hellip;</ng-container>
+      } @else {
+        Restore full backup
+      }
+    </button>
+
+    @if (fullBackupResult(); as result) {
+      <div class="result">
+        <p>
+          Restored {{ result.locations }} location(s), {{ result.books }} book(s),
+          {{ result.loans }} loan(s), {{ result.timelineEvents }} timeline event(s),
+          {{ result.collectionAreas }} collection area(s).
+        </p>
+        @if (result.errors.length > 0) {
+          <p class="error">{{ result.errors.length }} error(s):</p>
+          <ul>
+            @for (err of result.errors; track err) {
+              <li>{{ err }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="section-card">
+  <mat-card-header>
+    <mat-card-title>Enrichment archive (books + covers only)</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <p class="hint">
+      Download a .zip with just the exported books' metadata AND a compressed copy of
+      each cover photo, keyed by book id. Unzip it locally to run the cover-recognition
+      script against the photos, then import the same folder back below to update the
+      metadata and photos of books that already exist — this uses the "Only export books
+      needing metadata" checkbox above too. This does <strong>not</strong> include
+      locations, loans, timeline history, or create new books, and is not a substitute
+      for the full library backup above.
     </p>
 
     @if (zipExportError()) {

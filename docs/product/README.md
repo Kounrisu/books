@@ -13,6 +13,9 @@ Use `ROADMAP.md` to track product progress by phase.
 Use `REFERENCE_PROJECTS.md` to understand lessons borrowed from sibling
 projects such as LotoKarma, Lucky Stocks, and Lenormand.
 
+Use `BOOK_APP_RESEARCH.md` for external book-catalog references, ideas adopted
+in the location browser, and proposed follow-up improvements.
+
 Use `../AI_HANDOFF.md` when sharing the project with another AI assistant.
 
 ## How to Work With AI and Designers

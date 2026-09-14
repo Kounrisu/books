@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,6 +11,7 @@ import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog
   selector: 'app-area-list',
   imports: [RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressSpinnerModule],
   templateUrl: './area-list.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './area-list.scss',
 })
 export class AreaListComponent implements OnInit {

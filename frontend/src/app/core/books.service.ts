@@ -128,6 +128,20 @@ export class BooksService {
     return this.books().find((book) => book.id === id);
   }
 
+  /** Fetches a single book directly instead of requiring the whole list to
+   * be loaded first — used when opening a detail page straight from a URL
+   * (bookmark, refresh, shared link) rather than by clicking through the
+   * list. Upserts the result into the cached list so other computed state
+   * (list view, rankings) stays consistent. */
+  async getOne(id: string): Promise<BookRow> {
+    const book = await firstValueFrom(this.http.get<BookRow>(`${this.baseUrl}/${id}`));
+    this.books.update((list) => {
+      const exists = list.some((b) => b.id === id);
+      return exists ? list.map((b) => (b.id === id ? book : b)) : [...list, book];
+    });
+    return book;
+  }
+
   async bulkImportPhotos(formData: FormData): Promise<BulkImportResult> {
     const result = await firstValueFrom(
       this.http.post<BulkImportResult>(`${this.baseUrl}/bulk-import`, formData),

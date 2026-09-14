@@ -23,14 +23,22 @@
   display: none;
 }
 
+.unauth-theme-bar {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+}
+
 .demo-banner {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1.5rem;
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--mat-sys-tertiary-container, #fef3c7);
+  color: var(--mat-sys-on-tertiary-container, #92400e);
   font-size: 0.85rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #fde68a);
 
   mat-icon {
     font-size: 1.1rem;

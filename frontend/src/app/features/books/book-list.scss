@@ -2,24 +2,145 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+}
+
+.book-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--mat-sys-outline-variant);
 }
 
 .header-actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
-.table-scroll {
-  overflow-x: auto;
+// Search & Filter Card
+.search-filter-card {
+  background: var(--mat-sys-surface-container-lowest, var(--mat-sys-surface));
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 14px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.primary-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-input-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.filter-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-toggle-btn {
+  &.active-filter {
+    background-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+    border-color: var(--mat-sys-primary);
+  }
+}
+
+.active-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin-left: 0.4rem;
+}
+
+.quick-fav-btn {
+  &.active-fav {
+    background-color: color-mix(in srgb, #f59e0b 16%, transparent);
+    color: #b45309;
+    border-color: #f59e0b;
+  }
+}
+
+.clear-filters-btn {
+  font-size: 0.85rem;
+}
+
+// Advanced Collapsible Filters
+.advanced-filters-panel {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  animation: fadeIn 0.2s ease;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Table & Content
+.table-header-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.sort-hint {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.78rem;
+  margin: 0;
 }
 
 .book-table {
   width: 100%;
 
   a {
-    color: inherit;
+    color: var(--mat-sys-primary);
     text-decoration: none;
+    font-weight: 500;
 
     &:hover {
       text-decoration: underline;
@@ -33,6 +154,11 @@
 
     &:hover {
       color: var(--mat-sys-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: -2px;
     }
   }
 }
@@ -51,46 +177,51 @@
   margin-left: 1px;
 }
 
-.sort-hint {
+.row-status-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
   color: var(--mat-sys-on-surface-variant);
-  font-size: 0.8rem;
-  margin: 0 0 0.5rem;
+}
+
+.row-error-icon {
+  color: var(--mat-sys-error);
 }
 
 .cover-thumb {
-  width: 40px;
-  height: 56px;
+  width: 42px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
   display: block;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container);
+}
+
+.cover-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .empty-state {
   text-align: center;
   color: var(--mat-sys-on-surface-variant);
-  padding: 2rem;
-}
-
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: start;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.filter-bar mat-form-field {
-  width: auto;
-  min-width: 160px;
-}
-
-.search-field {
-  min-width: 260px;
-  flex: 1 1 260px;
-}
-
-.filter-bar button {
-  margin-top: 8px;
+  padding: 3rem 1.5rem;
+  background: var(--mat-sys-surface-container-low, var(--mat-sys-surface));
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  margin: 1rem 0;
 }
 
 .loading-state {
@@ -100,33 +231,39 @@
 }
 
 .category-cell {
-  background: none;
-  border: none;
-  padding: 0.25rem;
-  border-radius: 4px;
+  background: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
   cursor: pointer;
   font: inherit;
   color: inherit;
+  font-size: 0.82rem;
   text-align: left;
+  transition: background 0.15s ease;
 
   &:hover {
-    background: var(--mat-sys-surface-variant);
+    background: var(--mat-sys-surface-container-high);
   }
 }
 
 .category-cell-empty {
   color: var(--mat-sys-on-surface-variant);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-style: italic;
 }
 
 .inline-select {
-  font-size: 0.875rem;
-  min-width: 130px;
+  font-size: 0.85rem;
+  min-width: 120px;
+  padding: 0.25rem 0.5rem;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 6px;
 }
 
 .inline-edit-field {
-  width: 160px;
+  width: 150px;
 
   ::ng-deep .mat-mdc-form-field-subscript-wrapper {
     display: none;
@@ -137,98 +274,112 @@
   display: none;
 }
 
-// Below this width the table needs horizontal scrolling to see more than
-// cover + title, which is unusable on a phone — switch to a card list
-// instead. Cards keep the same inline-editable controls (favorite,
-// collection/reading status) as the table, just stacked.
-@media (max-width: 700px) {
-  .table-scroll {
+.mobile-sort-field {
+  display: none;
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+// Below 768px: Mobile responsive card layout
+@media (max-width: 768px) {
+  .modern-table-card {
     display: none;
+  }
+
+  .table-header-info {
+    display: none;
+  }
+
+  .mobile-sort-field {
+    display: block;
   }
 
   .book-cards {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.875rem;
   }
-}
 
-.book-card {
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 8px;
-  padding: 0.75rem;
-  background: var(--mat-sys-surface);
-}
-
-.book-card-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.book-card .cover-thumb {
-  width: 48px;
-  height: 68px;
-  flex-shrink: 0;
-}
-
-.cover-thumb-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--mat-sys-surface-variant);
-  color: var(--mat-sys-on-surface-variant);
-}
-
-.book-card-main {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.book-card-title {
-  display: block;
-  font-weight: 500;
-  color: inherit;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
+  .book-card {
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 12px;
+    padding: 0.875rem;
+    background: var(--mat-sys-surface);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   }
-}
 
-.book-card-author {
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.9rem;
-}
+  .book-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
 
-.book-card-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
+  .book-card .cover-thumb {
+    width: 52px;
+    height: 74px;
+    flex-shrink: 0;
+  }
 
-.book-card-selects {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
+  .book-card-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 
-.book-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.85rem;
-}
+  .book-card-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+    line-height: 1.3;
 
-.book-card-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 0.75rem;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .book-card-author {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.85rem;
+    margin-top: 0.2rem;
+  }
+
+  .book-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+  }
+
+  .book-card-selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+
+    .inline-select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .book-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.8rem;
+  }
+
+  .book-card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
 }
 
 @media (max-width: 600px) {
@@ -238,14 +389,30 @@
     gap: 0.75rem;
   }
 
-  .filter-bar {
-    flex-direction: column;
+  .header-actions {
+    justify-content: flex-end;
   }
 
-  .filter-bar mat-form-field,
-  .search-field {
+  .primary-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input-field {
     width: 100%;
     min-width: 0;
     flex: none;
+  }
+
+  .filter-action-buttons {
+    justify-content: flex-start;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .book-card-selects {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,15 +1,44 @@
 .page-header {
   margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0;
+  }
 }
 
 .user-table {
   width: 100%;
 }
 
+.user-email {
+  font-weight: 500;
+}
+
 .you {
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.8rem;
-  margin-left: 0.25rem;
+  color: var(--mat-sys-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-left: 0.35rem;
+  background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.role-select {
+  max-width: 110px;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.action-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .loading-state {

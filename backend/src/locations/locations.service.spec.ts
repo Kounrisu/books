@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { LocationsService } from './locations.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
+import type { UploadsService } from '../uploads/uploads.service.js';
 
 function makePrismaMock(
-  overrides: Partial<Record<'create' | 'findMany' | 'updateMany' | 'update' | 'deleteMany' | 'findFirst' | 'findFirstOrThrow', unknown>> = {},
+  overrides: Partial<Record<'create' | 'findMany' | 'updateMany' | 'update' | 'deleteMany' | 'delete' | 'findFirst' | 'findFirstOrThrow', unknown>> = {},
 ) {
   return {
     location: {
@@ -12,16 +13,30 @@ function makePrismaMock(
       updateMany: vi.fn().mockResolvedValue(overrides.updateMany ?? { count: 1 }),
       update: vi.fn().mockResolvedValue(overrides.update ?? null),
       deleteMany: vi.fn().mockResolvedValue(overrides.deleteMany ?? { count: 1 }),
-      findFirst: vi.fn().mockResolvedValue(overrides.findFirst ?? null),
+      delete: vi.fn().mockResolvedValue(overrides.delete ?? null),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          'findFirst' in overrides
+            ? overrides.findFirst
+            : { id: 'loc-1', userId: 'user-1', photoPath: null, parentLocationId: null },
+        ),
       findFirstOrThrow: vi.fn().mockResolvedValue(overrides.findFirstOrThrow ?? null),
     },
   } as unknown as PrismaService;
 }
 
+function makeUploadsMock(): UploadsService {
+  return {
+    saveImage: vi.fn().mockResolvedValue('generated-filename.webp'),
+    deleteFile: vi.fn().mockResolvedValue(undefined),
+  } as unknown as UploadsService;
+}
+
 describe('LocationsService', () => {
   it('creates a location scoped to the given user', async () => {
     const prisma = makePrismaMock({ create: { id: 'loc-1', userId: 'user-1', name: 'Garage' } });
-    const service = new LocationsService(prisma);
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     await service.create('user-1', { name: 'Garage' });
 
@@ -39,7 +54,7 @@ describe('LocationsService', () => {
 
   it('lists only the given user\'s locations', async () => {
     const prisma = makePrismaMock({ findMany: [{ id: 'loc-1', userId: 'user-1' }] });
-    const service = new LocationsService(prisma);
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     const result = await service.findAllForUser('user-1');
 
@@ -51,22 +66,22 @@ describe('LocationsService', () => {
   });
 
   it('rejects updating a location that does not belong to the user', async () => {
-    const prisma = makePrismaMock({ updateMany: { count: 0 } });
-    const service = new LocationsService(prisma);
+    const prisma = makePrismaMock({ findFirst: null });
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     await expect(service.update('user-1', 'loc-of-someone-else', { name: 'x' })).rejects.toThrow('Location not found');
   });
 
   it('rejects deleting a location that does not belong to the user', async () => {
-    const prisma = makePrismaMock({ deleteMany: { count: 0 } });
-    const service = new LocationsService(prisma);
+    const prisma = makePrismaMock({ findFirst: null });
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     await expect(service.delete('user-1', 'loc-of-someone-else')).rejects.toThrow('Location not found');
   });
 
   it('rejects a location being set as its own parent', async () => {
     const prisma = makePrismaMock();
-    const service = new LocationsService(prisma);
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     await expect(
       service.update('user-1', 'loc-1', { parentLocationId: 'loc-1' }),
@@ -79,7 +94,7 @@ describe('LocationsService', () => {
     const prisma = makePrismaMock({
       findFirst: { id: 'loc-2', parentLocationId: 'loc-1' },
     });
-    const service = new LocationsService(prisma);
+    const service = new LocationsService(prisma, makeUploadsMock());
 
     await expect(
       service.update('user-1', 'loc-1', { parentLocationId: 'loc-2' }),

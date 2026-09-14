@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -23,6 +23,8 @@ import {
 } from '../../core/books.service';
 import { LocationsService } from '../../core/locations.service';
 import { TimelineService } from '../../core/timeline.service';
+import { SecureImageDirective } from '../../core/secure-image.directive';
+import { CanComponentDeactivate } from '../../core/unsaved-changes.guard';
 import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import {
   BOOK_FORMAT_OPTIONS,
@@ -56,11 +58,13 @@ import { environment } from '../../../environments/environment';
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    SecureImageDirective,
   ],
   templateUrl: './book-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './book-detail.scss',
 })
-export class BookDetailComponent implements OnInit {
+export class BookDetailComponent implements OnInit, CanComponentDeactivate {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly booksService = inject(BooksService);
@@ -170,8 +174,12 @@ export class BookDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    if (this.booksService.books().length === 0) {
-      void this.booksService.load();
+    // Opening this page directly (bookmark, refresh, shared link) shouldn't
+    // require pulling the entire library first — fetch just this book if
+    // it isn't already cached from the list page.
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && !this.booksService.findById(id)) {
+      void this.booksService.getOne(id).catch(() => this.error.set('Could not load this book.'));
     }
     if (this.locationsService.locations().length === 0) {
       void this.locationsService.load();
@@ -295,6 +303,30 @@ export class BookDetailComponent implements OnInit {
     this.setPhotoPreview(null);
   }
 
+  /** Warns before an in-app route change discards an open edit — the
+   * editor previously had no guard at all, so navigating away (e.g. via
+   * the nav bar) silently threw away everything typed. */
+  async canDeactivate(): Promise<boolean> {
+    if (!this.editMode()) {
+      return true;
+    }
+    return this.confirmDialog.confirm({
+      title: 'Discard changes?',
+      message: 'You have an unsaved edit open. Leaving now will discard it.',
+      confirmLabel: 'Discard',
+      danger: true,
+    });
+  }
+
+  /** Warns before a tab close/refresh discards an open edit — canDeactivate
+   * only covers in-app navigation, not leaving the page entirely. */
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.editMode()) {
+      event.preventDefault();
+    }
+  }
+
   onPhotoSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
@@ -318,41 +350,46 @@ export class BookDetailComponent implements OnInit {
     this.error.set(null);
     this.saving.set(true);
     try {
+      // Every optional field is always appended, even when blank — a blank
+      // value means "clear this field," not "leave it unchanged." Only the
+      // fields with no representable "blank" state (relations, dates,
+      // numbers) skip the append when empty, and the backend transforms
+      // interpret an appended empty string as an explicit null/clear.
       const formData = new FormData();
       formData.append('title', this.title());
       formData.append('author', this.author());
       formData.append('itemType', this.itemType());
-      if (this.category()) formData.append('category', this.category());
-      if (this.subcategory()) formData.append('subcategory', this.subcategory());
-      if (this.language()) formData.append('language', this.language());
-      if (this.description()) formData.append('description', this.description());
-      if (this.myReview()) formData.append('myReview', this.myReview());
-      if (this.myNote() !== null) formData.append('myNote', String(this.myNote()));
+      formData.append('category', this.category());
+      formData.append('subcategory', this.subcategory());
+      formData.append('language', this.language());
+      formData.append('description', this.description());
+      formData.append('myReview', this.myReview());
+      formData.append('myNote', this.myNote() !== null ? String(this.myNote()) : '');
       formData.append('recommend', String(this.recommend()));
       formData.append('isFavorite', String(this.isFavorite()));
-      if (this.locationId()) formData.append('locationId', this.locationId());
-      if (this.purchaseDate()) formData.append('purchaseDate', this.purchaseDate());
-      if (this.purchasePrice() !== null) formData.append('purchasePrice', String(this.purchasePrice()));
+      formData.append('locationId', this.locationId());
+      formData.append('purchaseDate', this.purchaseDate());
+      formData.append('purchasePrice', this.purchasePrice() !== null ? String(this.purchasePrice()) : '');
       formData.append('ownershipFormat', this.ownershipFormat());
       formData.append('physicalStatus', this.physicalStatus());
       formData.append('libraryStatus', this.libraryStatus());
       formData.append('readingStatus', this.readingStatus());
-      if (this.savedList()) formData.append('savedList', this.savedList());
-      if (this.personalNotes()) formData.append('personalNotes', this.personalNotes());
-      if (this.spoilerNotes()) formData.append('spoilerNotes', this.spoilerNotes());
+      formData.append('savedList', this.savedList());
+      formData.append('personalNotes', this.personalNotes());
+      formData.append('spoilerNotes', this.spoilerNotes());
       formData.append('metadataStatus', this.metadataStatus());
-      if (this.isbn10()) formData.append('isbn10', this.isbn10());
-      if (this.isbn13()) formData.append('isbn13', this.isbn13());
-      if (this.publisher()) formData.append('publisher', this.publisher());
-      if (this.publicationYear() !== null) formData.append('publicationYear', String(this.publicationYear()));
-      if (this.edition()) formData.append('edition', this.edition());
-      if (this.pageCount() !== null) formData.append('pageCount', String(this.pageCount()));
-      if (this.seriesName()) formData.append('seriesName', this.seriesName());
-      if (this.seriesNumber()) formData.append('seriesNumber', this.seriesNumber());
-      if (this.translator()) formData.append('translator', this.translator());
+      formData.append('isbn10', this.isbn10());
+      formData.append('isbn13', this.isbn13());
+      formData.append('publisher', this.publisher());
+      formData.append('publicationYear', this.publicationYear() !== null ? String(this.publicationYear()) : '');
+      formData.append('edition', this.edition());
+      formData.append('pageCount', this.pageCount() !== null ? String(this.pageCount()) : '');
+      formData.append('seriesName', this.seriesName());
+      formData.append('seriesNumber', this.seriesNumber());
+      formData.append('translator', this.translator());
       formData.append('tags', this.tags());
-      if (this.condition()) formData.append('condition', this.condition());
-      if (this.format()) formData.append('format', this.format());
+      formData.append('condition', this.condition());
+      formData.append('format', this.format());
       const photo = this.photoFile();
       if (photo) formData.append('photo', photo);
 

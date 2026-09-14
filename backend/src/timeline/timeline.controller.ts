@@ -2,27 +2,9 @@ import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/co
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { TimelineService } from './timeline.service.js';
-import type {
-  CreateLoanInput,
-  CreateTimelineEventInput,
-  LoanRow,
-  TimelineEventRow,
-} from './timeline.types.js';
-
-interface TimelineEventBody {
-  bookId?: string;
-  eventType: string;
-  occurredAt: string;
-  title: string;
-  notes?: string;
-}
-
-interface LoanBody {
-  bookId: string;
-  borrowerName: string;
-  borrowedAt: string;
-  notes?: string;
-}
+import { CreateTimelineEventDto } from './dto/create-timeline-event.dto.js';
+import { CreateLoanDto } from './dto/create-loan.dto.js';
+import type { CreateLoanInput, CreateTimelineEventInput, LoanRow, TimelineEventRow } from './timeline.types.js';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -37,12 +19,12 @@ export class TimelineController {
   @Post('timeline')
   createEvent(
     @CurrentUser() userId: string,
-    @Body() body: TimelineEventBody,
+    @Body() body: CreateTimelineEventDto,
   ): Promise<TimelineEventRow> {
     const input: CreateTimelineEventInput = {
       bookId: body.bookId,
-      eventType: body.eventType as CreateTimelineEventInput['eventType'],
-      occurredAt: new Date(body.occurredAt),
+      eventType: body.eventType,
+      occurredAt: body.occurredAt,
       title: body.title,
       notes: body.notes,
     };
@@ -55,11 +37,11 @@ export class TimelineController {
   }
 
   @Post('loans')
-  createLoan(@CurrentUser() userId: string, @Body() body: LoanBody): Promise<LoanRow> {
+  createLoan(@CurrentUser() userId: string, @Body() body: CreateLoanDto): Promise<LoanRow> {
     const input: CreateLoanInput = {
       bookId: body.bookId,
       borrowerName: body.borrowerName,
-      borrowedAt: new Date(body.borrowedAt),
+      borrowedAt: body.borrowedAt,
       notes: body.notes,
     };
     return this.timelineService.createLoan(userId, input);

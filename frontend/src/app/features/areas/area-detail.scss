@@ -49,11 +49,35 @@
 }
 
 .cover-thumb {
-  width: 32px;
-  height: 44px;
+  width: 36px;
+  height: 50px;
   object-fit: cover;
   border-radius: 4px;
   display: block;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container);
+}
+
+.cover-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.star-icon {
+  color: #f59e0b;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
 }
 
 .notes-field {

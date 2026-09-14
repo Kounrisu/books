@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +20,7 @@ import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog
     MatTableModule,
   ],
   templateUrl: './admin-users.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './admin-users.scss',
 })
 export class AdminUsersComponent implements OnInit {

@@ -1,5 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -11,8 +11,9 @@ import { LocationRow, LocationsService } from '../../core/locations.service';
 
 @Component({
   selector: 'app-location-form',
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatCardModule, MatIconModule],
+  imports: [FormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatCardModule, MatIconModule],
   templateUrl: './location-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './location-form.scss',
 })
 export class LocationFormComponent implements OnInit {
@@ -30,6 +31,7 @@ export class LocationFormComponent implements OnInit {
   readonly geolocationError = signal<string | null>(null);
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
+  readonly returnLocationId = signal<string | null>(null);
 
   /** Candidate parents: every other location except this one and its own descendants (avoids a cycle). */
   protected readonly parentOptions = computed<LocationRow[]>(() => {
@@ -59,9 +61,15 @@ export class LocationFormComponent implements OnInit {
 
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
+      const parentId = this.route.snapshot.queryParamMap.get('parentLocationId');
+      if (parentId && this.locationsService.findById(parentId)) {
+        this.parentLocationId.set(parentId);
+        this.returnLocationId.set(parentId);
+      }
       return;
     }
     this.locationId.set(id);
+    this.returnLocationId.set(id);
 
     const location = this.locationsService.findById(id);
     if (!location) {
@@ -124,7 +132,8 @@ export class LocationFormComponent implements OnInit {
       } else {
         await this.locationsService.create(formData);
       }
-      this.router.navigateByUrl('/locations');
+      const destination = id ?? (this.parentLocationId() || null);
+      await this.router.navigate(destination ? ['/locations', destination] : ['/locations']);
     } catch {
       this.error.set('Could not save this location. Please try again.');
     } finally {

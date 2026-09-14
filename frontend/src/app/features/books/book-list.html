@@ -1,5 +1,10 @@
 <div class="page-header">
-  <h1>My Books</h1>
+  <div class="header-title-group">
+    <h1>My Books</h1>
+    @if (!booksService.loading() && booksService.books().length > 0) {
+      <span class="book-count-badge">{{ filteredBooks().length }} of {{ booksService.books().length }}</span>
+    }
+  </div>
   <div class="header-actions">
     <a mat-stroked-button routerLink="/books/import">
       <mat-icon>upload_file</mat-icon>
@@ -15,89 +20,134 @@
 @if (booksService.error(); as errorMessage) {
   <p class="error">{{ errorMessage }}</p>
 }
+@if (deleteError(); as errorMessage) {
+  <p class="error">{{ errorMessage }}</p>
+}
 
-<div class="filter-bar">
-  <mat-form-field appearance="outline" class="search-field">
-    <mat-label>Search</mat-label>
-    <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Title, author, series, description, review" />
-    <mat-icon matPrefix>search</mat-icon>
-  </mat-form-field>
-
-  @if (settingsService.isFilterVisible('itemType')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Type</mat-label>
-      <mat-select [ngModel]="itemTypeFilter()" (ngModelChange)="itemTypeFilter.set($event)">
-        <mat-option value="">All types</mat-option>
-        @for (option of itemTypeOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
-        }
-      </mat-select>
+<div class="search-filter-card">
+  <div class="primary-filter-row">
+    <mat-form-field appearance="outline" class="search-input-field" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search library</mat-label>
+      <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Search by title, author, series, review..." />
+      @if (search()) {
+        <button mat-icon-button matSuffix type="button" (click)="search.set('')" aria-label="Clear search">
+          <mat-icon>clear</mat-icon>
+        </button>
+      }
     </mat-form-field>
-  }
 
-  @if (settingsService.isFilterVisible('category')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Category</mat-label>
-      <mat-select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
-        <mat-option value="">All categories</mat-option>
-        @for (category of categories(); track category) {
-          <mat-option [value]="category">{{ category }}</mat-option>
+    <div class="filter-action-buttons">
+      <button
+        mat-stroked-button
+        type="button"
+        class="filter-toggle-btn"
+        [class.active-filter]="filtersExpanded() || activeAdvancedFiltersCount() > 0"
+        (click)="toggleFiltersExpanded()"
+        aria-label="Toggle advanced filters"
+      >
+        <mat-icon>{{ filtersExpanded() ? 'tune' : 'filter_list' }}</mat-icon>
+        Filters
+        @if (activeAdvancedFiltersCount() > 0) {
+          <span class="active-count-pill">{{ activeAdvancedFiltersCount() }}</span>
         }
-      </mat-select>
-    </mat-form-field>
-  }
+      </button>
 
-  @if (settingsService.isFilterVisible('subcategory')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Subgenre</mat-label>
-      <mat-select [ngModel]="subcategoryFilter()" (ngModelChange)="subcategoryFilter.set($event)">
-        <mat-option value="">All subgenres</mat-option>
-        @for (subcategory of subcategories(); track subcategory) {
-          <mat-option [value]="subcategory">{{ subcategory }}</mat-option>
+      <button
+        mat-stroked-button
+        type="button"
+        class="quick-fav-btn"
+        [class.active-fav]="favoriteOnlyFilter()"
+        (click)="toggleFavoriteOnly()"
+        aria-label="Toggle favorites only"
+      >
+        <mat-icon>{{ favoriteOnlyFilter() ? 'star' : 'star_border' }}</mat-icon>
+        Favorites
+      </button>
+
+      @if (hasActiveFilters()) {
+        <button mat-button color="warn" type="button" class="clear-filters-btn" (click)="clearFilters()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Reset
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (filtersExpanded()) {
+    <div class="advanced-filters-panel">
+      <div class="filters-grid">
+        @if (settingsService.isFilterVisible('itemType')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Item Type</mat-label>
+            <mat-select [ngModel]="itemTypeFilter()" (ngModelChange)="itemTypeFilter.set($event)">
+              <mat-option value="">All types</mat-option>
+              @for (option of itemTypeOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         }
-      </mat-select>
-    </mat-form-field>
-  }
 
-  @if (settingsService.isFilterVisible('location')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Location</mat-label>
-      <mat-select [ngModel]="locationFilter()" (ngModelChange)="locationFilter.set($event)">
-        <mat-option value="">All locations</mat-option>
-        @for (location of locationsService.locations(); track location.id) {
-          <mat-option [value]="location.id">{{ locationsService.pathName(location.id) }}</mat-option>
+        @if (settingsService.isFilterVisible('category')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Category</mat-label>
+            <mat-select [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event)">
+              <mat-option value="">All categories</mat-option>
+              @for (category of categories(); track category) {
+                <mat-option [value]="category">{{ category }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         }
-      </mat-select>
-    </mat-form-field>
-  }
 
-  @if (settingsService.isFilterVisible('libraryStatus')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Collection status</mat-label>
-      <mat-select multiple [ngModel]="libraryStatusFilter()" (ngModelChange)="libraryStatusFilter.set($event)">
-        @for (option of libraryStatusOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        @if (settingsService.isFilterVisible('subcategory')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Subgenre</mat-label>
+            <mat-select [ngModel]="subcategoryFilter()" (ngModelChange)="subcategoryFilter.set($event)">
+              <mat-option value="">All subgenres</mat-option>
+              @for (subcategory of subcategories(); track subcategory) {
+                <mat-option [value]="subcategory">{{ subcategory }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         }
-      </mat-select>
-    </mat-form-field>
-  }
 
-  @if (settingsService.isFilterVisible('readingStatus')) {
-    <mat-form-field appearance="outline">
-      <mat-label>Reading status</mat-label>
-      <mat-select multiple [ngModel]="readingStatusFilter()" (ngModelChange)="readingStatusFilter.set($event)">
-        @for (option of readingStatusOptions; track option.value) {
-          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        @if (settingsService.isFilterVisible('location')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Location</mat-label>
+            <mat-select [ngModel]="locationFilter()" (ngModelChange)="locationFilter.set($event)">
+              <mat-option value="">All locations</mat-option>
+              @for (location of locationsService.locations(); track location.id) {
+                <mat-option [value]="location.id">{{ locationsService.pathName(location.id) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         }
-      </mat-select>
-    </mat-form-field>
-  }
 
-  @if (hasActiveFilters()) {
-    <button mat-stroked-button type="button" (click)="clearFilters()">
-      <mat-icon>close</mat-icon>
-      Clear filters
-    </button>
+        @if (settingsService.isFilterVisible('libraryStatus')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Collection status</mat-label>
+            <mat-select multiple [ngModel]="libraryStatusFilter()" (ngModelChange)="libraryStatusFilter.set($event)">
+              @for (option of libraryStatusOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
+        @if (settingsService.isFilterVisible('readingStatus')) {
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Reading status</mat-label>
+            <mat-select multiple [ngModel]="readingStatusFilter()" (ngModelChange)="readingStatusFilter.set($event)">
+              @for (option of readingStatusOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+      </div>
+    </div>
   }
 </div>
 
@@ -110,21 +160,26 @@
 } @else if (filteredBooks().length === 0) {
   <p class="empty-state">No books match your search or filters.</p>
 } @else {
-  <p class="sort-hint">Click a column header to sort. Shift-click to sort by multiple columns.</p>
-  <div class="table-scroll">
-  <table mat-table [dataSource]="filteredBooks()" class="book-table">
-    <ng-container matColumnDef="cover">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let book">
-        @if (book.coverImagePath) {
-          <img class="cover-thumb" [src]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
-        }
-      </td>
-    </ng-container>
+  <div class="table-header-info">
+    <p class="sort-hint">Click a column header to sort. Shift-click to sort by multiple columns.</p>
+  </div>
+  <div class="modern-table-card">
+    <div class="table-scroll">
+      <table mat-table [dataSource]="filteredBooks()" class="book-table">
+        <ng-container matColumnDef="cover">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let book">
+            @if (book.coverImagePath) {
+              <img class="cover-thumb" [appSecureSrc]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
+            } @else {
+              <div class="cover-thumb cover-thumb-empty"><mat-icon>menu_book</mat-icon></div>
+            }
+          </td>
+        </ng-container>
 
-    <ng-container matColumnDef="title">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('title', $event)">
-        Title
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('title')" (click)="toggleSort('title', $event)" (keydown.enter)="toggleSort('title', $event)" (keydown.space)="onSortKeySpace('title', $event)">
+            Title
         @if (sortState('title'); as state) {
           @if (state.active) {
             <mat-icon class="sort-icon">{{ state.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
@@ -138,7 +193,7 @@
     </ng-container>
 
     <ng-container matColumnDef="author">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('author', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('author')" (click)="toggleSort('author', $event)" (keydown.enter)="toggleSort('author', $event)" (keydown.space)="onSortKeySpace('author', $event)">
         Author
         @if (sortState('author'); as state) {
           @if (state.active) {
@@ -151,7 +206,7 @@
     </ng-container>
 
     <ng-container matColumnDef="itemType">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('itemType', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('itemType')" (click)="toggleSort('itemType', $event)" (keydown.enter)="toggleSort('itemType', $event)" (keydown.space)="onSortKeySpace('itemType', $event)">
         Type
         @if (sortState('itemType'); as state) {
           @if (state.active) {
@@ -174,7 +229,7 @@
     </ng-container>
 
     <ng-container matColumnDef="category">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('category', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('category')" (click)="toggleSort('category', $event)" (keydown.enter)="toggleSort('category', $event)" (keydown.space)="onSortKeySpace('category', $event)">
         Category
         @if (sortState('category'); as state) {
           @if (state.active) {
@@ -220,7 +275,7 @@
     </ng-container>
 
     <ng-container matColumnDef="subcategory">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('subcategory', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('subcategory')" (click)="toggleSort('subcategory', $event)" (keydown.enter)="toggleSort('subcategory', $event)" (keydown.space)="onSortKeySpace('subcategory', $event)">
         Subgenre
         @if (sortState('subcategory'); as state) {
           @if (state.active) {
@@ -266,7 +321,7 @@
     </ng-container>
 
     <ng-container matColumnDef="seriesName">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('seriesName', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('seriesName')" (click)="toggleSort('seriesName', $event)" (keydown.enter)="toggleSort('seriesName', $event)" (keydown.space)="onSortKeySpace('seriesName', $event)">
         Series
         @if (sortState('seriesName'); as state) {
           @if (state.active) {
@@ -279,7 +334,7 @@
     </ng-container>
 
     <ng-container matColumnDef="seriesNumber">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('seriesNumber', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('seriesNumber')" (click)="toggleSort('seriesNumber', $event)" (keydown.enter)="toggleSort('seriesNumber', $event)" (keydown.space)="onSortKeySpace('seriesNumber', $event)">
         Issue / volume
         @if (sortState('seriesNumber'); as state) {
           @if (state.active) {
@@ -292,7 +347,7 @@
     </ng-container>
 
     <ng-container matColumnDef="format">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('format', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('format')" (click)="toggleSort('format', $event)" (keydown.enter)="toggleSort('format', $event)" (keydown.space)="onSortKeySpace('format', $event)">
         Format
         @if (sortState('format'); as state) {
           @if (state.active) {
@@ -305,7 +360,7 @@
     </ng-container>
 
     <ng-container matColumnDef="location">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('location', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('location')" (click)="toggleSort('location', $event)" (keydown.enter)="toggleSort('location', $event)" (keydown.space)="onSortKeySpace('location', $event)">
         Location
         @if (sortState('location'); as state) {
           @if (state.active) {
@@ -329,7 +384,7 @@
     </ng-container>
 
     <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('libraryStatus', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('libraryStatus')" (click)="toggleSort('libraryStatus', $event)" (keydown.enter)="toggleSort('libraryStatus', $event)" (keydown.space)="onSortKeySpace('libraryStatus', $event)">
         Collection status
         @if (sortState('libraryStatus'); as state) {
           @if (state.active) {
@@ -352,7 +407,7 @@
     </ng-container>
 
     <ng-container matColumnDef="reading">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('readingStatus', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('readingStatus')" (click)="toggleSort('readingStatus', $event)" (keydown.enter)="toggleSort('readingStatus', $event)" (keydown.space)="onSortKeySpace('readingStatus', $event)">
         Reading status
         @if (sortState('readingStatus'); as state) {
           @if (state.active) {
@@ -375,7 +430,7 @@
     </ng-container>
 
     <ng-container matColumnDef="favorite">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('favorite', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('favorite')" (click)="toggleSort('favorite', $event)" (keydown.enter)="toggleSort('favorite', $event)" (keydown.space)="onSortKeySpace('favorite', $event)">
         Favorite
         @if (sortState('favorite'); as state) {
           @if (state.active) {
@@ -397,7 +452,7 @@
     </ng-container>
 
     <ng-container matColumnDef="createdAt">
-      <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('createdAt', $event)">
+      <th mat-header-cell *matHeaderCellDef class="sortable" tabindex="0" role="columnheader" [attr.aria-sort]="ariaSort('createdAt')" (click)="toggleSort('createdAt', $event)" (keydown.enter)="toggleSort('createdAt', $event)" (keydown.space)="onSortKeySpace('createdAt', $event)">
         Added
         @if (sortState('createdAt'); as state) {
           @if (state.active) {
@@ -412,6 +467,21 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef></th>
       <td mat-cell *matCellDef="let book">
+        @if (mutatingIds().has(book.id)) {
+          <mat-icon class="spin row-status-icon" aria-label="Saving change">progress_activity</mat-icon>
+        }
+        @if (mutationErrors()[book.id]; as errorMessage) {
+          <button
+            mat-icon-button
+            type="button"
+            class="row-error-icon"
+            [matTooltip]="errorMessage + ' Click to retry.'"
+            (click)="retryMutation(book.id)"
+            aria-label="Change failed to save — click to retry"
+          >
+            <mat-icon>error_outline</mat-icon>
+          </button>
+        }
         <a mat-icon-button [routerLink]="['/books', book.id]" aria-label="View and edit book">
           <mat-icon>edit</mat-icon>
         </a>
@@ -431,13 +501,23 @@
     <tr mat-row *matRowDef="let row; columns: displayedColumns();"></tr>
   </table>
   </div>
+  </div>
+
+  <mat-form-field appearance="outline" class="mobile-sort-field">
+    <mat-label>Sort by</mat-label>
+    <mat-select [ngModel]="mobileSortValue()" (ngModelChange)="setMobileSort($event)">
+      @for (option of mobileSortOptions; track option.value) {
+        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 
   <div class="book-cards">
     @for (book of filteredBooks(); track book.id) {
       <div class="book-card">
         <div class="book-card-top">
           @if (book.coverImagePath) {
-            <img class="cover-thumb" [src]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
+            <img class="cover-thumb" [appSecureSrc]="apiBaseUrl + '/uploads/' + book.coverImagePath" [alt]="book.title" />
           } @else {
             <div class="cover-thumb cover-thumb-empty"><mat-icon>menu_book</mat-icon></div>
           }
@@ -445,6 +525,21 @@
             <a [routerLink]="['/books', book.id]" class="book-card-title">{{ book.title }}</a>
             <div class="book-card-author">{{ book.author }}</div>
           </div>
+          @if (mutatingIds().has(book.id)) {
+            <mat-icon class="spin row-status-icon" aria-label="Saving change">progress_activity</mat-icon>
+          }
+          @if (mutationErrors()[book.id]; as errorMessage) {
+            <button
+              mat-icon-button
+              type="button"
+              class="row-error-icon"
+              [matTooltip]="errorMessage + ' Click to retry.'"
+              (click)="retryMutation(book.id)"
+              aria-label="Change failed to save — click to retry"
+            >
+              <mat-icon>error_outline</mat-icon>
+            </button>
+          }
           <button
             mat-icon-button
             type="button"

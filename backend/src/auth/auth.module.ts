@@ -5,11 +5,22 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
 import { AdminGuard } from './admin.guard.js';
 import { DemoModule } from '../demo/demo.module.js';
 
+function resolveJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret) {
+    return secret;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in production');
+  }
+  return 'dev-secret-change-me';
+}
+
 @Module({
   imports: [DemoModule],
   controllers: [AuthController],
   providers: [
-    { provide: 'JWT_SECRET', useValue: process.env.JWT_SECRET ?? 'dev-secret-change-me' },
+    { provide: 'JWT_SECRET', useValue: resolveJwtSecret() },
     AuthService,
     JwtAuthGuard,
     AdminGuard,

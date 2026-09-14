@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -16,6 +16,7 @@ import {
 } from '../../core/books.service';
 import { LocationsService } from '../../core/locations.service';
 import { OWNERSHIP_FORMAT_OPTIONS } from '../../core/book-labels';
+import { BackupService, RestoreSummary } from '../../core/backup.service';
 
 @Component({
   selector: 'app-book-bulk-import',
@@ -31,11 +32,13 @@ import { OWNERSHIP_FORMAT_OPTIONS } from '../../core/book-labels';
     MatSelectModule,
   ],
   templateUrl: './book-bulk-import.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './book-bulk-import.scss',
 })
 export class BookBulkImportComponent {
   protected readonly booksService = inject(BooksService);
   protected readonly locationsService = inject(LocationsService);
+  protected readonly backupService = inject(BackupService);
   protected readonly ownershipFormatOptions = OWNERSHIP_FORMAT_OPTIONS;
 
   readonly photoFiles = signal<File[]>([]);
@@ -62,6 +65,13 @@ export class BookBulkImportComponent {
   readonly zipImporting = signal(false);
   readonly zipImportResult = signal<ImportResult | null>(null);
   readonly zipImportError = signal<string | null>(null);
+
+  readonly fullBackupExporting = signal(false);
+  readonly fullBackupExportError = signal<string | null>(null);
+  readonly fullBackupFile = signal<File | null>(null);
+  readonly fullBackupImporting = signal(false);
+  readonly fullBackupResult = signal<RestoreSummary | null>(null);
+  readonly fullBackupError = signal<string | null>(null);
 
   constructor() {
     void this.locationsService.load();
@@ -185,6 +195,50 @@ export class BookBulkImportComponent {
       this.zipImportError.set('Could not import this backup. Make sure it is a .zip file exported from this app.');
     } finally {
       this.zipImporting.set(false);
+    }
+  }
+
+  async downloadFullBackup(): Promise<void> {
+    this.fullBackupExportError.set(null);
+    this.fullBackupExporting.set(true);
+    try {
+      const blob = await this.backupService.exportBlob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'library-full-backup.zip';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      this.fullBackupExportError.set('Could not build the backup. Please try again.');
+    } finally {
+      this.fullBackupExporting.set(false);
+    }
+  }
+
+  onFullBackupFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.fullBackupFile.set(input.files?.[0] ?? null);
+  }
+
+  async submitFullBackupRestore(): Promise<void> {
+    const file = this.fullBackupFile();
+    if (!file) {
+      return;
+    }
+    this.fullBackupError.set(null);
+    this.fullBackupResult.set(null);
+    this.fullBackupImporting.set(true);
+    try {
+      const result = await this.backupService.importZip(file);
+      this.fullBackupResult.set(result);
+      this.fullBackupFile.set(null);
+      await this.booksService.load();
+      await this.locationsService.load();
+    } catch {
+      this.fullBackupError.set('Could not restore this backup. Make sure it is a full-backup .zip exported from this app.');
+    } finally {
+      this.fullBackupImporting.set(false);
     }
   }
 }

@@ -1,12 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { promises as fs } from 'node:fs';
-import { extname, join } from 'node:path';
+import { join } from 'node:path';
 import archiver = require('archiver');
 import AdmZip = require('adm-zip');
 import sharp = require('sharp');
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UPLOADS_DIR } from '../uploads/multer.config.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 import { DEMO_MAX_BOOKS } from '../demo/demo.constants.js';
 import { computeRankings } from './ranking.js';
 import type {
@@ -54,9 +53,15 @@ const EXPORT_COLUMNS = [
   'coverImagePath',
 ] as const;
 
+const MAX_ZIP_ENTRIES = 5000;
+const MAX_ZIP_UNCOMPRESSED_BYTES = 1 * 1024 * 1024 * 1024; // 1 GiB
+
 @Injectable()
 export class BooksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploads: UploadsService,
+  ) {}
 
   private async assertDemoCapacity(userId: string, additionalBooks = 1): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } });
@@ -71,7 +76,7 @@ export class BooksService {
     }
   }
 
-  async create(userId: string, input: CreateBookInput): Promise<BookRow> {
+  async create(userId: string, input: CreateBookInput, photoBuffer?: Buffer): Promise<BookRow> {
     await this.assertDemoCapacity(userId);
     if (input.locationId) {
       const location = await this.prisma.location.findFirst({
@@ -81,7 +86,8 @@ export class BooksService {
         throw new NotFoundException('Location not found');
       }
     }
-    return this.prisma.book.create({ data: { ...input, userId } });
+    const coverImagePath = photoBuffer ? await this.uploads.saveImage(photoBuffer) : input.coverImagePath;
+    return this.prisma.book.create({ data: { ...input, coverImagePath, userId } });
   }
 
   async findAllForUser(userId: string): Promise<BookWithRanking[]> {
@@ -96,11 +102,26 @@ export class BooksService {
     }));
   }
 
+  async findOne(userId: string, id: string): Promise<BookRow> {
+    const book = await this.prisma.book.findFirst({ where: { id, userId } });
+    if (!book) {
+      throw new NotFoundException('Book not found');
+    }
+    return book;
+  }
+
   async update(
     userId: string,
     id: string,
     input: UpdateBookInput,
+    photoBuffer?: Buffer,
   ): Promise<BookRow> {
+    // Check ownership before touching the filesystem — an image is only
+    // ever written once we know this book actually belongs to the caller.
+    const existing = await this.prisma.book.findFirst({ where: { id, userId } });
+    if (!existing) {
+      throw new NotFoundException('Book not found');
+    }
     if (input.locationId) {
       const location = await this.prisma.location.findFirst({
         where: { id: input.locationId, userId },
@@ -109,24 +130,27 @@ export class BooksService {
         throw new NotFoundException('Location not found');
       }
     }
-    const result = await this.prisma.book.updateMany({
+    const coverImagePath = photoBuffer ? await this.uploads.saveImage(photoBuffer) : input.coverImagePath;
+    await this.prisma.book.updateMany({
       where: { id, userId },
       // An empty string means "clear the location" — locationId has a DB
       // foreign key, so it must become null rather than '' (which would
       // violate the constraint since '' is never a real location id).
-      data: { ...input, locationId: input.locationId === '' ? null : input.locationId },
+      data: { ...input, coverImagePath, locationId: input.locationId === '' ? null : input.locationId },
     });
-    if (result.count === 0) {
-      throw new NotFoundException('Book not found');
+    if (photoBuffer && existing.coverImagePath) {
+      await this.uploads.deleteFile(existing.coverImagePath);
     }
     return this.prisma.book.findFirstOrThrow({ where: { id, userId } });
   }
 
   async delete(userId: string, id: string): Promise<void> {
-    const result = await this.prisma.book.deleteMany({ where: { id, userId } });
-    if (result.count === 0) {
+    const existing = await this.prisma.book.findFirst({ where: { id, userId } });
+    if (!existing) {
       throw new NotFoundException('Book not found');
     }
+    await this.prisma.book.delete({ where: { id: existing.id } });
+    await this.uploads.deleteFile(existing.coverImagePath);
   }
 
   async bulkImportFromPhotos(
@@ -155,12 +179,13 @@ export class BooksService {
     for (const photo of photos) {
       try {
         const placeholderTitle = photo.originalname.replace(/\.[^/.]+$/, '') || 'Untitled';
+        const coverImagePath = await this.uploads.saveImage(photo.buffer);
         const book = await this.prisma.book.create({
           data: {
             userId,
             title: placeholderTitle,
             author: 'Unknown',
-            coverImagePath: photo.filename,
+            coverImagePath,
             metadataStatus: 'needs_metadata',
             ownershipFormat: defaults.ownershipFormat,
             locationId: defaults.locationId,
@@ -312,6 +337,21 @@ export class BooksService {
    */
   async importZip(userId: string, buffer: Buffer): Promise<ImportResult> {
     const zip = new AdmZip(buffer);
+    const entries = zip.getEntries();
+    if (entries.length > MAX_ZIP_ENTRIES) {
+      return {
+        updated: [],
+        errors: [{ id: '(missing)', message: `Archive has too many entries (max ${MAX_ZIP_ENTRIES})` }],
+      };
+    }
+    const totalUncompressed = entries.reduce((sum, entry) => sum + entry.header.size, 0);
+    if (totalUncompressed > MAX_ZIP_UNCOMPRESSED_BYTES) {
+      return {
+        updated: [],
+        errors: [{ id: '(missing)', message: 'Archive expands beyond the allowed size limit' }],
+      };
+    }
+
     const metadataEntry = zip.getEntry('books.json');
     if (!metadataEntry) {
       return { updated: [], errors: [{ id: '(missing)', message: 'books.json not found in the uploaded archive' }] };
@@ -334,23 +374,26 @@ export class BooksService {
         continue;
       }
       try {
+        // Confirm ownership before decoding/writing any referenced photo —
+        // never touch the filesystem on behalf of a book that isn't ours.
+        const existing = await this.prisma.book.findFirst({ where: { id: row.id, userId } });
+        if (!existing) {
+          errors.push({ id: row.id, message: 'Book not found' });
+          continue;
+        }
         const fields = this.pickImportableFields(row);
         if (row.coverPhotoInZip) {
           const photoEntry = zip.getEntry(row.coverPhotoInZip);
           if (photoEntry) {
-            const filename = `${randomUUID()}${extname(row.coverPhotoInZip) || '.jpg'}`;
-            await fs.mkdir(UPLOADS_DIR, { recursive: true });
-            await fs.writeFile(join(UPLOADS_DIR, filename), photoEntry.getData());
-            fields.coverImagePath = filename;
+            fields.coverImagePath = await this.uploads.saveImage(photoEntry.getData());
           }
         }
-        const result = await this.prisma.book.updateMany({
+        await this.prisma.book.updateMany({
           where: { id: row.id, userId },
           data: fields,
         });
-        if (result.count === 0) {
-          errors.push({ id: row.id, message: 'Book not found' });
-          continue;
+        if (fields.coverImagePath && existing.coverImagePath) {
+          await this.uploads.deleteFile(existing.coverImagePath);
         }
         updated.push(
           await this.prisma.book.findFirstOrThrow({ where: { id: row.id, userId } }),

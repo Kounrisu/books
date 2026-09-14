@@ -73,74 +73,84 @@
   } @else if (links().length === 0) {
     <p class="empty-state">No books linked to this area yet.</p>
   } @else {
-    <div class="table-scroll">
-      <table mat-table [dataSource]="sortedLinks()" class="area-book-table">
-        <ng-container matColumnDef="cover">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let link">
-            @if (link.book.coverImagePath) {
-              <img class="cover-thumb" [src]="apiBaseUrl + '/uploads/' + link.book.coverImagePath" [alt]="link.book.title" />
-            }
-          </td>
-        </ng-container>
+    <div class="modern-table-card">
+      <div class="table-scroll">
+        <table mat-table [dataSource]="sortedLinks()" class="area-book-table">
+          <ng-container matColumnDef="cover">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let link">
+              @if (link.book.coverImagePath) {
+                <img class="cover-thumb" [appSecureSrc]="apiBaseUrl + '/uploads/' + link.book.coverImagePath" [alt]="link.book.title" />
+              } @else {
+                <div class="cover-thumb cover-thumb-empty"><mat-icon>menu_book</mat-icon></div>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="title">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('title')">Title</th>
-          <td mat-cell *matCellDef="let link">
-            <a [routerLink]="['/books', link.bookId]">{{ link.book.title }}</a>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('title')">Title</th>
+            <td mat-cell *matCellDef="let link">
+              <a [routerLink]="['/books', link.bookId]">{{ link.book.title }}</a>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="author">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('author')">Author</th>
-          <td mat-cell *matCellDef="let link">{{ link.book.author }}</td>
-        </ng-container>
+          <ng-container matColumnDef="author">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('author')">Author</th>
+            <td mat-cell *matCellDef="let link">{{ link.book.author }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="category">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('category')">Category</th>
-          <td mat-cell *matCellDef="let link">
-            @if (link.book.category) {
-              <mat-chip-set>
-                <mat-chip>{{ link.book.category }}</mat-chip>
-              </mat-chip-set>
-            }
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('category')">Category</th>
+            <td mat-cell *matCellDef="let link">
+              @if (link.book.category) {
+                <mat-chip-set>
+                  <mat-chip>{{ link.book.category }}</mat-chip>
+                </mat-chip-set>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="format">
-          <th mat-header-cell *matHeaderCellDef>Format</th>
-          <td mat-cell *matCellDef="let link">{{ bookFormatLabel(link.book.format) }}</td>
-        </ng-container>
+          <ng-container matColumnDef="format">
+            <th mat-header-cell *matHeaderCellDef>Format</th>
+            <td mat-cell *matCellDef="let link">{{ bookFormatLabel(link.book.format) }}</td>
+          </ng-container>
 
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('libraryStatus')">Collection status</th>
-          <td mat-cell *matCellDef="let link">{{ libraryStatusLabel(link.book.libraryStatus) }}</td>
-        </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('libraryStatus')">Collection status</th>
+            <td mat-cell *matCellDef="let link">
+              <span class="status-pill status-{{ link.book.libraryStatus }}">{{ libraryStatusLabel(link.book.libraryStatus) }}</span>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="reading">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('readingStatus')">Reading status</th>
-          <td mat-cell *matCellDef="let link">{{ readingStatusLabel(link.book.readingStatus) }}</td>
-        </ng-container>
+          <ng-container matColumnDef="reading">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('readingStatus')">Reading status</th>
+            <td mat-cell *matCellDef="let link">
+              <span class="status-pill status-{{ link.book.readingStatus }}">{{ readingStatusLabel(link.book.readingStatus) }}</span>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="favorite">
-          <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('favorite')">Favorite</th>
-          <td mat-cell *matCellDef="let link">
-            @if (link.book.isFavorite) { ⭐ }
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="favorite">
+            <th mat-header-cell *matHeaderCellDef class="sortable" (click)="toggleSort('favorite')">Favorite</th>
+            <td mat-cell *matCellDef="let link">
+              @if (link.book.isFavorite) {
+                <mat-icon class="star-icon">star</mat-icon>
+              }
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let link">
-            <button mat-icon-button type="button" (click)="removeBook(link)" aria-label="Remove from area">
-              <mat-icon>close</mat-icon>
-            </button>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let link">
+              <button mat-icon-button type="button" (click)="removeBook(link)" aria-label="Remove from area">
+                <mat-icon>close</mat-icon>
+              </button>
+            </td>
+          </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
     </div>
   }
 }

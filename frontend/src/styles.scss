@@ -6,32 +6,45 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
+$theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$azure-palette,
+    tertiary: mat.$orange-palette,
+  ),
+  typography: (
+    plain-family: ('Roboto', sans-serif),
+    brand-family: ('Roboto', sans-serif),
+  ),
+  density: (
+    scale: 0,
+  ),
+));
+
+$dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$azure-palette,
+    tertiary: mat.$orange-palette,
+  ),
+));
+
 html {
-  @include mat.theme((
-    color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
+  @include mat.all-component-themes($theme);
+  color-scheme: light;
+
+  &[data-theme="dark"] {
+    @include mat.all-component-colors($dark-theme);
+    color-scheme: dark;
+  }
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 /* You can add global styles to this file, and also import other style files */
 
@@ -61,4 +74,99 @@ mat-form-field {
 
 .spin {
   animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+// Global Modern Table Container
+.modern-table-card {
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+// Global Table Styles
+table.mat-mdc-table {
+  background: transparent;
+  width: 100%;
+
+  th.mat-mdc-header-cell {
+    background: var(--mat-sys-surface-container, var(--mat-sys-surface-variant));
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  td.mat-mdc-cell {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface);
+    vertical-align: middle;
+  }
+
+  tr.mat-mdc-row {
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: var(--mat-sys-surface-container-high, rgba(0, 0, 0, 0.025));
+    }
+  }
+}
+
+// Status Badges
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1.2;
+
+  &.status-active,
+  &.status-owned,
+  &.status-read {
+    background-color: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent);
+    color: var(--mat-sys-primary);
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 30%, transparent);
+  }
+
+  &.status-reading {
+    background-color: color-mix(in srgb, var(--mat-sys-tertiary) 18%, transparent);
+    color: var(--mat-sys-tertiary);
+    border: 1px solid color-mix(in srgb, var(--mat-sys-tertiary) 35%, transparent);
+  }
+
+  &.status-unread,
+  &.status-wishlist,
+  &.status-disabled {
+    background-color: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+    border: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  &.status-lent {
+    background-color: color-mix(in srgb, #f59e0b 16%, transparent);
+    color: #b45309;
+    border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+  }
 }

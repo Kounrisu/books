@@ -41,13 +41,16 @@ export class LocationsController {
     @Body() body: { name: string; latitude?: string; longitude?: string; parentLocationId?: string },
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<LocationRow> {
-    return this.locationsService.create(userId, {
-      name: body.name,
-      photoPath: photo?.filename,
-      latitude: parseCoordinate(body.latitude, 'latitude'),
-      longitude: parseCoordinate(body.longitude, 'longitude'),
-      parentLocationId: body.parentLocationId || null,
-    });
+    return this.locationsService.create(
+      userId,
+      {
+        name: body.name,
+        latitude: parseCoordinate(body.latitude, 'latitude'),
+        longitude: parseCoordinate(body.longitude, 'longitude'),
+        parentLocationId: body.parentLocationId || null,
+      },
+      photo?.buffer,
+    );
   }
 
   @Get()
@@ -63,13 +66,17 @@ export class LocationsController {
     @Body() body: { name?: string; latitude?: string; longitude?: string; parentLocationId?: string },
     @UploadedFile() photo?: Express.Multer.File,
   ): Promise<LocationRow> {
-    return this.locationsService.update(userId, id, {
-      name: body.name,
-      photoPath: photo?.filename,
-      latitude: parseCoordinate(body.latitude, 'latitude'),
-      longitude: parseCoordinate(body.longitude, 'longitude'),
-      parentLocationId: body.parentLocationId !== undefined ? body.parentLocationId || null : undefined,
-    });
+    return this.locationsService.update(
+      userId,
+      id,
+      {
+        name: body.name,
+        latitude: parseCoordinate(body.latitude, 'latitude'),
+        longitude: parseCoordinate(body.longitude, 'longitude'),
+        parentLocationId: body.parentLocationId !== undefined ? body.parentLocationId || null : undefined,
+      },
+      photo?.buffer,
+    );
   }
 
   @Delete(':id')

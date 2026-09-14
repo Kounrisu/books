@@ -831,3 +831,83 @@ UX/UI), which still hasn't started.
   live — `/auth/demo` issues a token, `/auth/me` reports `isDemo: true`,
   and the books page renders all 10 seeded demo books with correct types/
   categories/statuses.
+
+## 2026-09-14 — Project analysis and proposed improvements
+
+User request: "analyze and propose improvements". Interpreted as a source-based product, reliability, security, and usability review, with proposals only and no application implementation or roadmap scope change.
+
+Findings and proposed acceptance criteria are recorded in `docs/reviews/2026-09-14-improvement-review.md`. Highest priorities: enforce disabled-account access denial, exclude password hashes from admin responses, protect/validate uploads, separate enrichment archives from true backups, fix clearing optional edit fields, and make lending/timeline updates consistent. Also proposed accessible mobile sorting, mutation feedback, pagination/lazy routes, a metadata review queue, and targeted integration coverage before the premium redesign.
+
+Verification: backend 42/42 tests and build passed; frontend 11/11 ChromeHeadless tests and build passed. Frontend initial bundle warning: 972.51 kB against 500 kB. Docker daemon unavailable, so no database integration or full rendered-app review was performed. The 21st UI review skill was read, but its CLI and design context file are absent. Only this log and the review document were changed; proposals remain unapproved for implementation.
+
+## 2026-09-14 — Implemented the improvement-review findings
+
+User request: "correct everything" (referring to `docs/reviews/2026-09-14-improvement-review.md`). Interpreted as: implement all 10 numbered defects, not just the top 6 security items, prioritized security/data-integrity first.
+
+### Action Taken
+
+**#1 Deactivation didn't revoke access** — `JwtAuthGuard` now looks up the user on every request and rejects if missing/inactive (previously only checked the JWT signature); `AuthModule` now throws at startup if `JWT_SECRET` is unset in production instead of silently using a dev fallback.
+
+**#2 Admin responses exposed password hashes** — `AdminService` now uses an explicit `SAFE_USER_SELECT` Prisma `select` on every user read/write response; `setRole`/`setActive`/`deleteUser`'s last-active-admin checks are now wrapped in `$transaction` to close the concurrent-check race the review flagged.
+
+**#3 Uploads were public and under-validated** — new `UploadsModule` (`uploads.service.ts`, `uploads.controller.ts`): multer now buffers to memory instead of disk, `UploadsService.saveImage` decodes+re-encodes every upload through `sharp` (rejects anything that isn't a real image, strips embedded payloads/metadata) before writing a server-generated filename to disk; `/uploads/:filename` is now a `JwtAuthGuard`-protected route that only serves a file if it's referenced by one of the caller's own books/locations (previously a public static directory). `BooksService`/`LocationsService` now check ownership *before* writing/replacing a photo, and delete the old file on replace and on book/location delete (previously orphaned). ZIP import now enforces entry-count/decompressed-size caps and re-encodes photo entries through the same `sharp` path instead of trusting raw bytes. Frontend: new `SecureImageDirective` (`appSecureSrc`) fetches images via `HttpClient` — carrying the bearer token — into an object URL, since a plain `<img src>` can't reach an authenticated endpoint; applied everywhere a cover/location photo is rendered.
+
+**#4 "Full backup" couldn't restore a lost library** — new `BackupModule` (`backup.service.ts`, `GET/POST /backup/export|import`) covering every user-scoped table (locations with hierarchy, books, loans, timeline events, collection areas + links, settings) plus photos, restoring via upsert-by-original-id so it *creates* missing rows rather than only updating existing ones. The original books-only zip flow is kept but relabeled "Enrichment archive" in the UI to set correct expectations.
+
+**#5 Clearing a field silently kept the old value** — three-state PATCH semantics: omitted key = unchanged, empty string = explicit clear (→ `null`), real value = replace. `toOptionalString`/`toOptionalNumber`/`toOptionalDate` transforms updated accordingly on both book DTOs; `book-detail.ts`'s `saveEdit` now always appends every optional field (previously guarded with `if (this.field())`, which is what conflated "blank" with "unchanged").
+
+**#6 Lending/timeline lacked server enforcement** — `TimelineService.createEvent` now verifies book ownership when a `bookId` is given (previously unchecked); `createLoan`/`returnLoan` are now transactional, `createLoan` rejects a second open loan on the same book, `returnLoan` is idempotent (returns the existing record instead of rewriting the date/duplicating the event), and both sync `Book.physicalStatus` (`lent_out` / `in_collection`).
+
+**#7 Sorting wasn't keyboard/mobile accessible** — table sort headers gained `tabindex`, `role="columnheader"`, `aria-sort`, and Enter/Space handling (previously click-only); the card view (shown below 700px, where the table and its sort headers are hidden) got its own "Sort by" `mat-select`; the `.spin` animation now respects `prefers-reduced-motion`.
+
+**#8 Mutations weren't observable** — inline edits in `book-list.ts` were consolidated into one `runFieldMutation` helper that serializes writes per book (so an earlier request's response can't land after and overwrite a later optimistic edit), shows a per-row saving spinner and a retryable error icon on failure (previously silent rollback), and list-delete failures are now surfaced instead of swallowed in a bare `finally`. `book-detail.ts`'s editor gained a `canDeactivate` guard (confirms before an in-app navigation discards an open edit) and a `beforeunload` handler (warns on tab close/refresh) — there was no guard at all before.
+
+**#9 Not prepared for a large collection** — every feature route now lazy-loads (`loadComponent`) instead of the router eagerly importing every page; this alone took the initial bundle from 972.51 kB to ~518 kB (raw), under the hard 1 MB build-error budget (a small ~18 kB warning against the 500 kB budget remains — further reduction would need trimming what's still eager, e.g. Angular Material modules shared across routes). Added `GET /books/:id` and wired `book-detail.ts` to use it directly when a book isn't already cached (previously required the *entire* list to load first just to open one book's detail page). Did **not** implement full server-side pagination/filtering/sorting or DB indexes — that's a larger architectural change than fits safely without a live database to verify against; left as an explicit follow-up.
+
+**#10 Unvalidated API boundaries / missing tests** — added `class-validator` DTOs (`CreateTimelineEventDto`, `CreateLoanDto`) for the timeline/loan endpoints, which previously took plain untyped interfaces with no runtime constraint checking. Added unit tests for the three areas the review flagged as uncovered: `jwt-auth.guard.spec.ts`, `admin.service.spec.ts`, `timeline.service.spec.ts`. Added `.github/workflows/ci.yml` (backend + frontend: install, test, build) since none existed. Did **not** add DTOs for the bulk-import/zip-import/admin-role bodies, or a browser/e2e suite — scoped down given the size of what's already changed.
+
+### Files / Areas Touched
+
+Backend: `auth/{jwt-auth.guard,auth.module}.ts` + new `auth/jwt-auth.guard.spec.ts`; `admin/admin.service.ts` + new `admin/admin.service.spec.ts`; new `uploads/{uploads.service,uploads.controller,uploads.module}.ts`, `uploads/multer.config.ts` (disk→memory storage), `uploads/zip-upload.config.spec.ts` updated; `books/{books.controller,books.service,books.types}.ts`, `books/dto/{create-book.dto,update-book.dto,book-transforms}.ts`, `books/books.service.spec.ts`, `books/books.controller.spec.ts`; `locations/{locations.controller,locations.service,locations.module}.ts`, `locations/locations.service.spec.ts`, `locations/locations.controller.spec.ts`; `timeline/timeline.service.ts` + new `timeline/dto/{create-timeline-event.dto,create-loan.dto}.ts`, `timeline/timeline.controller.ts`, new `timeline/timeline.service.spec.ts`; new `backup/{backup.service,backup.controller,backup.module}.ts`; `main.ts`, `app.module.ts`.
+
+Frontend: `app.routes.ts` (all routes → `loadComponent`); new `core/{secure-image.directive,unsaved-changes.guard,backup.service}.ts`; `core/books.service.ts` (`getOne`); `features/books/{book-list.ts,book-list.html,book-list.scss,book-detail.ts,book-detail.html,book-bulk-import.ts,book-bulk-import.html}`; `features/locations/location-list.{ts,html}`; `features/areas/area-detail.{ts,html}`; `styles.scss` (reduced-motion).
+
+### Roadmap / Spec Impact
+
+None — this is Phase 1 hardening (reliability/security/usability), consistent with the project's phase strategy; no premium-redesign (Phase 2) work was touched.
+
+### Open Questions / Follow-Up
+
+- Server-side pagination/compact list response, filtering/sorting, and DB indexes (part of #9) are not implemented — flagged as a separate follow-up given the architectural size and the lack of a live database to verify against in this session.
+- DTOs for bulk-import/zip-import/admin-role request bodies (#10) are not added; those endpoints still rely on manual field whitelisting rather than `class-validator`.
+- No browser/e2e suite was added; verification here is `tsc --noEmit`, unit tests, and production builds on both sides — Docker was still unavailable, so no live-database or rendered-UI verification was possible this session. The user should smoke-test the upload/backup/lending flows against a real database before relying on this in production.
+- The bundle-size warning (~518 kB vs. 500 kB budget) is not fully resolved, only brought under the hard error threshold.
+
+## 2026-09-14 — Book-app research and nested location browsing
+
+User asked to research book-management websites for ideas and to open Home and see its bookshelves. Reviewed official CLZ Books Web, Libib, LibraryThing and TinyCat material. Recorded source links and follow-up ideas in `docs/product/BOOK_APP_RESEARCH.md`.
+
+Implemented a focused functional extension: top-level location index, nested location pages, breadcrumbs, recursive book counts, local book search (title/author/ISBN/series/tags), direct-versus-nested book scope, and contextual add-location/add-book defaults. Child creation returns to the parent. Existing private-image handling and uncommitted reliability changes were preserved. No database migration or sample records were added. Updated location page/component specs, global location behavior, product index, and roadmap.
+
+Verification: frontend production build passed (existing initial-bundle warning around 518 kB); 21 ChromeHeadless tests passed, including 10 new hierarchy/workflow checks. No local API/PostgreSQL service was available for full-stack verification. Other researched ideas (saved views, cover/list choice, ISBN lookup, bulk shelf moves, review queue) remain documented proposals rather than silently expanding this change into the premium redesign.
+
+## 2026-09-14 — Angular 22 upgrade, Light & Dark mode, and Table UI/UX overhaul
+
+User asked to upgrade to latest Angular and Material theme, implement Light & Dark mode, and upgrade the filters and all tables across the app for responsive, well-designed UI.
+
+### Action Taken
+- **Angular 22 Upgrade**: Stepped through v20 → v21 → v22 using `ng update`, upgrading `@angular/*` to `22.1.6`, `@angular/material` & `@angular/cdk` to `22.1.6`, `@angular/cli` & `@angular/build` to `22.1.8`, and `typescript` to `6.0.3`. Applied all automated v21 and v22 migration schematics.
+- **Light & Dark Mode**: Created `ThemeService` (`src/app/core/theme.service.ts`) with `light`, `dark`, and `system` preferences, system media query listener, and `localStorage` persistence. Defined dual Material 3 themes in `styles.scss` (`$theme` and `$dark-theme` with `mat.define-theme`), binding dark mode variables under `html[data-theme="dark"]`. Added theme toggle menus in navbar, mobile menu, and unauthenticated layout.
+- **Filter Toolbar Redesign**: Replaced the cluttered wrapping form fields in `book-list` with a sleek `search-filter-card`. Features an integrated search input with clear button, a collapsible advanced filters panel with badge count (`Filters (N)`), quick filter toggle for Favorites, and a Reset action.
+- **Table UI/UX Overhaul**:
+  - Implemented `.modern-table-card` wrapper with rounded corners, subtle border, and elevation across all tables.
+  - Sticky table headers (`position: sticky; top: 0; z-index: 2`).
+  - Added shadow, aspect-ratio, and placeholder fallback for book cover thumbnails (`.cover-thumb`, `.cover-thumb-empty`).
+  - Standardized modern `.status-pill` badges across collection statuses, reading statuses, and user account statuses.
+  - Upgraded Collection Area Books table (`area-detail.html`) and Admin Users table (`admin-users.html`) to inherit the new table card, pill badges, and aligned action button groups.
+  - Enhanced mobile card layout for small screens (<768px) and location card hover transitions.
+
+### Verification
+- Frontend production build (`ng build`) passed cleanly.
+- Unit tests (`ng test --watch=false --browsers=ChromeHeadless`) passed: 21/21 tests successful.
+

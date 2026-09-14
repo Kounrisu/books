@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -48,9 +48,11 @@ import {
     MatAutocompleteModule,
   ],
   templateUrl: './book-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './book-form.scss',
 })
 export class BookFormComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   private readonly booksService = inject(BooksService);
   protected readonly locationsService = inject(LocationsService);
   private readonly router = inject(Router);
@@ -104,7 +106,10 @@ export class BookFormComponent implements OnInit {
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
-    void this.locationsService.load();
+    void this.locationsService.load().then(() => {
+      const id = this.route.snapshot.queryParamMap.get('locationId');
+      if (id && this.locationsService.findById(id)) this.locationId.set(id);
+    });
     void this.booksService.categorySuggestions().then((values) => this.categorySuggestions.set(values));
     void this.booksService.subcategorySuggestions().then((values) => this.subcategorySuggestions.set(values));
   }

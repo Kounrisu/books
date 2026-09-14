@@ -211,6 +211,14 @@ renameable places such as "Home", "Garage", or "Second home". Each top-level
 place can contain more specific sublocations such as "Living room shelf",
 "Office bookcase", "Garage box 3", or "Second home bedroom shelf".
 
+The locations index shows top-level places. Opening a place shows its immediate
+child locations and a breadcrumb path, supporting Home → Bookshelf → Shelf.
+Each card shows a book total including descendants. Within a location, users
+can search its books and choose whether to include nested locations. Child
+creation and book creation opened from a location preselect that context.
+These browsing behaviors were explicitly requested and implemented on
+2026-09-14 using the existing parent-location relationship.
+
 Each location can optionally have:
 - one reference photo, so the user can visually recognize the box/shelf;
 - a geolocation (latitude/longitude), captured via the browser's

@@ -50,7 +50,7 @@
           @if (photoPreviewUrl(); as preview) {
             <img class="cover" [src]="preview" [alt]="title()" />
           } @else if (book()!.coverImagePath) {
-            <img class="cover" [src]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="title()" />
+            <img class="cover" [appSecureSrc]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="title()" />
           }
           <button mat-stroked-button type="button" (click)="coverInput.click()">
             <mat-icon>photo_camera</mat-icon>
@@ -58,7 +58,7 @@
           </button>
           <input #coverInput type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
         } @else if (book()!.coverImagePath) {
-          <img class="cover" [src]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="book()!.title" />
+          <img class="cover" [appSecureSrc]="apiBaseUrl + '/uploads/' + book()!.coverImagePath" [alt]="book()!.title" />
         }
       </div>
 

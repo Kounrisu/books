@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +15,7 @@ import { BooksService } from '../../core/books.service';
 import { bookFormatLabel, libraryStatusLabel, readingStatusLabel } from '../../core/book-labels';
 import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import { environment } from '../../../environments/environment';
+import { SecureImageDirective } from '../../core/secure-image.directive';
 
 type SortField = 'title' | 'author' | 'category' | 'favorite' | 'libraryStatus' | 'readingStatus' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -33,8 +34,10 @@ type SortDirection = 'asc' | 'desc';
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTableModule,
+    SecureImageDirective,
   ],
   templateUrl: './area-detail.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './area-detail.scss',
 })
 export class AreaDetailComponent implements OnInit {

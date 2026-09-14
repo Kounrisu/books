@@ -8,6 +8,8 @@ import { AdminModule } from './admin/admin.module.js';
 import { TimelineModule } from './timeline/timeline.module.js';
 import { CollectionAreasModule } from './collection-areas/collection-areas.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
+import { BackupModule } from './backup/backup.module.js';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { SettingsModule } from './settings/settings.module.js';
     TimelineModule,
     CollectionAreasModule,
     SettingsModule,
+    UploadsModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [],

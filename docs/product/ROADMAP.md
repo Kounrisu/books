@@ -79,6 +79,10 @@ Goal: turn the existing prototype into a comfortable daily catalog.
   confirmation prompt).
 - [x] Add edit location UI (`/locations/:id/edit`, reuses the add-location
   form).
+- [x] Add location browsing (`/locations/:id`): top-level places → nested
+  shelves/rooms/boxes, breadcrumbs, recursive book counts, scoped book search,
+  direct/nested scope toggle, and parent/location defaults for creation.
+  Implemented 2026-09-14 at explicit user request; see `BOOK_APP_RESEARCH.md`.
 - [x] Add delete location UI (from the location card, with a confirmation
   prompt; deleting a location clears `locationId` on its books rather than
   blocking, per the `ON DELETE SET NULL` foreign key).

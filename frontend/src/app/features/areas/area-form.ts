@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,6 +24,7 @@ const STATUS_OPTIONS = ['planned', 'active', 'paused', 'completed', 'reference']
     MatSelectModule,
   ],
   templateUrl: './area-form.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './area-form.scss',
 })
 export class AreaFormComponent implements OnInit {
